@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { getDiscArt, getChoreoSVG } from '@/lib/sfa/discArt';
+import { useChoreoOverrides, useDiscOverrides } from '@/lib/sfa/SkinContext';
 
 function Choreo({ id }) {
-  return <div dangerouslySetInnerHTML={{ __html: getChoreoSVG(id) }} />;
+  const overrides = useChoreoOverrides();
+  return <div dangerouslySetInnerHTML={{ __html: getChoreoSVG(id, overrides) }} />;
 }
 
 export default function MidpointScene({ scene, onSubmit }) {

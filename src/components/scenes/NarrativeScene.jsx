@@ -1,13 +1,16 @@
 import React from 'react';
 import { wordReveal } from '@/lib/wordReveal';
 import { getDiscArt, getChoreoSVG } from '@/lib/sfa/discArt';
+import { useChoreoOverrides, useDiscOverrides } from '@/lib/sfa/SkinContext';
 
 function Choreo({ id }) {
-  return <div dangerouslySetInnerHTML={{ __html: getChoreoSVG(id) }} />;
+  const overrides = useChoreoOverrides();
+  return <div dangerouslySetInnerHTML={{ __html: getChoreoSVG(id, overrides) }} />;
 }
 
 function DiscArtEl({ artId }) {
-  return <div className="sfa-disc" dangerouslySetInnerHTML={{ __html: getDiscArt(artId) }} />;
+  const overrides = useDiscOverrides();
+  return <div className="sfa-disc" dangerouslySetInnerHTML={{ __html: getDiscArt(artId, overrides) }} />;
 }
 
 export default function NarrativeScene({ scene }) {

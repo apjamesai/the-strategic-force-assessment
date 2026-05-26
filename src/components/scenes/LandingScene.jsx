@@ -1,9 +1,11 @@
 import React from 'react';
 import { getChoreoSVG } from '@/lib/sfa/discArt';
+import { useChoreoOverrides, useDiscOverrides } from '@/lib/sfa/SkinContext';
 import { SKIN_LIST, getActiveSkinId, setActiveSkinId } from '@/lib/sfa/skins/index';
 
 function Choreo({ id }) {
-  return <div dangerouslySetInnerHTML={{ __html: getChoreoSVG(id) }} />;
+  const overrides = useChoreoOverrides();
+  return <div dangerouslySetInnerHTML={{ __html: getChoreoSVG(id, overrides) }} />;
 }
 
 /**
