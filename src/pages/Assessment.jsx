@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { SCENES_FORCE_TRIAL } from '@/lib/sfa/scenes-force-trial';
+import { SKINS, SKIN_LIST, getActiveSkinId, setActiveSkinId } from '@/lib/sfa/skins/index';
 import {
-  FRAMEWORK, ARCHETYPES, SECONDARY_PATTERNS, RISK_COPY, NEXT_STEPS, MOCK_PROFILES,
+  FRAMEWORK, MOCK_PROFILES,
   RULE_DEFAULTS, rebuildScores, computeResults, getRunningFlags,
   pickArchetype, pickSecondaryPattern, bandFor, overallBand, riskBand,
   applyConditional, personalizeScene
@@ -196,9 +196,11 @@ function WheelSVG({ R, onSelect, onHover }) {
   );
 }
 
-function ResultsPage({ R, archKey, secondaryKey, reflections, onRestart, onDownload }) {
-  const arch = ARCHETYPES[archKey];
-  const secondary = secondaryKey ? SECONDARY_PATTERNS[secondaryKey] : null;
+function ResultsPage({ R, archKey, secondaryKey, reflections, onRestart, onDownload,
+  archetypes = {}, riskCopy = {}, nextSteps = {}, secondaryPatterns = {} }) {
+  // Fall back to engine constants if skin doesn't provide them
+  const arch = archetypes[archKey] || {};
+  const secondary = secondaryKey ? (secondaryPatterns[secondaryKey] || null) : null;
   const [selectedKey, setSelectedKey] = useState(null);
   const [showTiles, setShowTiles] = useState(false);
   const sortedP = Object.entries(R.practices).sort((a,b)=>b[1]-a[1]);
@@ -327,7 +329,7 @@ function ResultsPage({ R, archKey, secondaryKey, reflections, onRestart, onDownl
         <div className="sfa-results-section-display">Not failures — interpretive overlays that make the pattern legible.</div>
         <div className="sfa-risk-gauge-grid">
           {Object.entries(R.risks).map(([k,v])=>{
-            const rc=RISK_COPY[k], band=riskBand(v), copy=v<=30?rc.low:v<=60?rc.mod:rc.high;
+            const rc=riskCopy[k]||{name:k,low:'',mod:'',high:'',q:''}, band=riskBand(v), copy=v<=30?rc.low:v<=60?rc.mod:rc.high;
             const circumference=2*Math.PI*36, dashOffset=circumference-(v/100)*circumference;
             return (
               <div key={k} className="sfa-risk-gauge">
@@ -373,7 +375,7 @@ function ResultsPage({ R, archKey, secondaryKey, reflections, onRestart, onDownl
         <div className="sfa-results-section-title">Next Steps — Practices To Test and Trial</div>
         <div className="sfa-results-section-display">Four small, concrete experiments. Pick one. Run it. Notice what shifts.</div>
         <div className="sfa-next-steps-grid">
-          {(NEXT_STEPS[archKey]||[]).map((step,i)=>(
+          {(nextSteps[archKey]||[]).map((step,i)=>(
             <div key={i} className="sfa-next-step-card">
               <div className="sfa-next-step-num">No. {String(i+1).padStart(2,'0')}</div>
               <div className="sfa-next-step-icon"><StepIcon k={step.icon}/></div>
@@ -420,9 +422,31 @@ function ResultsPage({ R, archKey, secondaryKey, reflections, onRestart, onDownl
   );
 }
 
+// ─── Apply skin theme CSS variables to document root ─────────
+function applySkinTheme(skin) {
+  if (!skin?.theme) return;
+  const root = document.documentElement;
+  Object.entries(skin.theme).forEach(([k, v]) => {
+    if (k.startsWith('--')) root.style.setProperty(k, v);
+  });
+  // Inject font import if present
+  if (skin.theme.fontImport) {
+    const existingLink = document.getElementById('skin-font-import');
+    if (!existingLink || existingLink.href !== skin.theme.fontImport) {
+      const link = document.createElement('link');
+      link.id = 'skin-font-import';
+      link.rel = 'stylesheet';
+      link.href = skin.theme.fontImport;
+      document.head.appendChild(link);
+    }
+  }
+}
+
 // ─── MAIN ASSESSMENT COMPONENT ───────────────────────────────
 export default function Assessment() {
-  const [scenes] = useState(() => SCENES_FORCE_TRIAL);
+  const activeSkinId = getActiveSkinId();
+  const activeSkin = SKINS[activeSkinId] || SKINS.force_trial;
+  const [scenes] = useState(() => activeSkin.scenes);
   const [current, setCurrent] = useState(0);
   const [outgoing, setOutgoing] = useState(null);
   const [user, setUser] = useState({ firstName: '', lastName: '', email: '', gender: 'they' });
@@ -588,7 +612,7 @@ export default function Assessment() {
 
   const handleDownload = () => {
     const R = computeResults(scores);
-    const arch = ARCHETYPES[pickArchetype(R)];
+    const arch = (activeSkin.archetypes || {})[pickArchetype(R)] || {};
     const data = { overall_score: R.overall, archetype: arch.name, band: arch.band, practices: R.practices, levels: R.levels, risks: R.risks, reflections, completed: new Date().toISOString() };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -601,7 +625,7 @@ export default function Assessment() {
   const handlePreview = (primary, secondary) => {
     const mockR = secondary
       ? (() => {
-          const base = JSON.parse(JSON.stringify(MOCK_PROFILES[primary] || MOCK_PROFILES.hidden_drifter));
+          const base = JSON.parse(JSON.stringify(MOCK_PROFILES[primary] || MOCK_PROFILES.hidden_drifter));  // eslint-disable-line
           const tune = {
             architect_of_order: () => { base.risks.control_bias = 78; },
             the_justifier: () => { base.risks.moral_drift = 70; },
@@ -619,6 +643,15 @@ export default function Assessment() {
     setShowResults(true);
     if (!user.firstName) setUser({ firstName: 'Citizen', lastName: 'Preview', email: 'preview@local', gender: 'they' });
   };
+
+  // ─── Apply skin theme on mount ───────────────────────────────
+  useEffect(() => {
+    applySkinTheme(activeSkin);
+    // Apply body classes (e.g. skin-petals for Yi)
+    if (activeSkin.bodyClasses?.length) {
+      activeSkin.bodyClasses.forEach(cls => document.body.classList.add(cls));
+    }
+  }, []);
 
   // ─── Particles ───────────────────────────────────────────────
   useEffect(() => {
@@ -708,9 +741,14 @@ export default function Assessment() {
   }, [adminOpen]);
 
   // ─── Derived ─────────────────────────────────────────────────
+  const skinArchetypes = activeSkin.archetypes;
+  const skinRiskCopy = activeSkin.riskCopy;
+  const skinNextSteps = activeSkin.nextSteps;
+  const skinSecondaryPatterns = activeSkin.secondaryPatterns;
+
   const R = previewData?.R || computeResults(scores);
   const archKey = previewData?.archKey || pickArchetype(R);
-  const secondaryKey = previewData?.secondaryKey || pickSecondaryPattern(R);
+  const secondaryKey = previewData?.secondaryKey || pickSecondaryPattern(R, undefined, skinSecondaryPatterns);
   const scene = currentScene;
   const showBackBtn = current > 0 && scene && !['landing', 'intake', 'crawl', 'results-launch'].includes(scene.type);
   const showChrome = current > 0;
@@ -795,6 +833,8 @@ export default function Assessment() {
           <ResultsPage
             R={R} archKey={archKey} secondaryKey={secondaryKey}
             reflections={reflections} onRestart={handleRestart} onDownload={handleDownload}
+            archetypes={skinArchetypes} riskCopy={skinRiskCopy} nextSteps={skinNextSteps}
+            secondaryPatterns={skinSecondaryPatterns}
           />
         )}
       </div>
@@ -818,7 +858,7 @@ export default function Assessment() {
             <div className="sfa-admin-section-title">Switch between archetypes</div>
             <div className="sfa-admin-section-sub">Preview any archetype result directly.</div>
             <div className="sfa-admin-arch-grid">
-              {Object.entries(ARCHETYPES).map(([key, a]) => (
+              {Object.entries(skinArchetypes).map(([key, a]) => (
                 <div key={key} className="sfa-admin-arch-card" onClick={() => handlePreview(key, null)}>
                   <div className="tag">{a.band}</div>
                   <div className="name">{a.name}</div>
