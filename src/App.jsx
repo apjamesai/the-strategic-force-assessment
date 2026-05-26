@@ -6,6 +6,8 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Assessment from './pages/Assessment';
+import AdminPage from './pages/AdminPage';
+import ImageStudioPage from './pages/ImageStudioPage';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -35,6 +37,8 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/" element={<Assessment />} />
+      <Route path="/admin" element={<AdminPage />} />
+      <Route path="/admin/image-studio" element={<ImageStudioPage />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
