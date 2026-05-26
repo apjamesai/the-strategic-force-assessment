@@ -480,6 +480,8 @@ export default function Assessment() {
       outgoingTimerRef.current = setTimeout(() => setOutgoing(null), 1800);
       return c + 1;
     });
+    setTimerVisible(false);
+    setTimerRunning(false);
     setIsWhooshing(false);
     window.scrollTo(0, 0);
   }, [scenes.length]);
@@ -488,15 +490,16 @@ export default function Assessment() {
     clearTimeout(timerRef.current);
     clearTimeout(whooshRef.current);
     clearTimeout(outgoingTimerRef.current);
-    setCurrent(c => {
-      if (c <= 0) return c;
-      const newIdx = c - 1;
-      setOutgoing(c);
-      outgoingTimerRef.current = setTimeout(() => setOutgoing(null), 1800);
-      const newScores = rebuildScores(scenes, Object.fromEntries(Object.entries(answersRef.current).filter(([k]) => +k < newIdx)));
-      setScores(newScores);
-      return newIdx;
-    });
+    setTimerVisible(false);
+    setTimerRunning(false);
+    const c = currentRef.current;
+    if (c <= 0) return;
+    const newIdx = c - 1;
+    setOutgoing(c);
+    outgoingTimerRef.current = setTimeout(() => setOutgoing(null), 1800);
+    const newScores = rebuildScores(scenes, Object.fromEntries(Object.entries(answersRef.current).filter(([k]) => +k < newIdx)));
+    setScores(newScores);
+    setCurrent(newIdx);
     window.scrollTo(0, 0);
   }, [scenes]);
 
@@ -530,14 +533,14 @@ export default function Assessment() {
       setTimerVisible(true);
       setTimerRunning(true);
     }, 600);
-    const advanceTimer = setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       setTimerVisible(false);
       setTimerRunning(false);
       advance();
     }, scene.duration);
     return () => {
       clearTimeout(showTimer);
-      clearTimeout(advanceTimer);
+      clearTimeout(timerRef.current);
       clearTimeout(whooshRef.current);
     };
   }, [current, advance, getScene]);
@@ -713,7 +716,7 @@ export default function Assessment() {
   const showChrome = current > 0;
   const isCrawl = scene?.type === 'crawl';
 
-  function renderSceneContent(s) {
+  function renderSceneContent(s, idx) {
     if (!s) return null;
     switch (s.type) {
       case 'landing': return <LandingScene scene={s} onNext={advance} />;
@@ -721,7 +724,7 @@ export default function Assessment() {
       case 'crawl': return <CrawlScene scene={s} />;
       case 'narrative': return <NarrativeScene scene={s} />;
       case 'narrative-scene': return <NarrativeQuoteScene scene={s} />;
-      case 'question': return <QuestionScene scene={s} savedAnswer={answers[current]} onAnswer={handleAnswer} />;
+      case 'question': return <QuestionScene scene={s} savedAnswer={answers[idx ?? current]} onAnswer={handleAnswer} />;
       case 'midpoint': return <MidpointScene scene={s} onSubmit={handleMidpoint} />;
       case 'twist': return <TwistScene scene={s} />;
       case 'end-reflection': return <EndReflectionScene scene={s} onSubmit={handleReflection} />;
@@ -733,7 +736,7 @@ export default function Assessment() {
   function renderOutgoingContent(idx) {
     const s = getScene(idx);
     if (!s) return null;
-    return renderSceneContent(s);
+    return renderSceneContent(s, idx);
   }
 
   return (
@@ -776,7 +779,7 @@ export default function Assessment() {
       {!showResults && (
         <div className="sfa-stage">
           {outgoing !== null && (
-            <SceneSlot key={`out-${outgoing}`} active={false} isCrawl={getScene(outgoing)?.type === 'crawl'}>
+            <SceneSlot key={`out-${outgoing}`} outgoing={true} isCrawl={getScene(outgoing)?.type === 'crawl'}>
               {renderOutgoingContent(outgoing)}
             </SceneSlot>
           )}

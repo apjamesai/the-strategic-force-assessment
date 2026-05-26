@@ -19,25 +19,33 @@ export default function QuestionScene({ scene, savedAnswer, onAnswer }) {
   }, []);
 
   const handleRank = (idx) => {
-    setRanking(prev => prev.includes(idx) ? prev.filter(x => x !== idx) : [...prev, idx]);
+    setRanking(prev => {
+      const next = prev.includes(idx) ? prev.filter(x => x !== idx) : [...prev, idx];
+      if (next.length === scene.items.length) {
+        setTimeout(() => onAnswer(next.slice()), 320);
+      }
+      return next;
+    });
+  };
+
+  const handleSelect = (i) => {
+    setSelected(i);
+    setTimeout(() => onAnswer(i), 320);
   };
 
   const handleSubmit = () => {
-    if (scene.kind === 'rating' && selected !== null) onAnswer(selected);
-    else if (scene.kind === 'mc' && selected !== null) onAnswer(selected);
+    if (scene.kind === 'short-text') onAnswer(null, textVal);
     else if (scene.kind === 'ranking' && ranking.length === scene.items.length) onAnswer(ranking.slice());
-    else if (scene.kind === 'short-text') onAnswer(null, textVal);
   };
 
   const rankLabels = ['1st', '2nd', '3rd', '4th'];
   const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
 
   const isReady = (
-    (scene.kind === 'rating' && selected !== null) ||
-    (scene.kind === 'mc' && selected !== null) ||
     (scene.kind === 'ranking' && ranking.length === scene.items.length) ||
     (scene.kind === 'short-text' && textVal.trim().length >= 3)
   );
+  const showAdvance = scene.kind === 'ranking' || scene.kind === 'short-text';
 
   return (
     <div className="sfa-scene-inner sfa-layout-centered">
@@ -58,7 +66,7 @@ export default function QuestionScene({ scene, savedAnswer, onAnswer }) {
         {scene.kind === 'rating' && (
           <div className="sfa-q-scale">
             {(scene.labels || []).map((label, i) => (
-              <div key={i} className={`sfa-q-scale-item${selected === i ? ' selected' : ''}`} onClick={() => setSelected(i)}>
+              <div key={i} className={`sfa-q-scale-item${selected === i ? ' selected' : ''}`} onClick={() => handleSelect(i)}>
                 <div className="sfa-q-scale-num">{i + 1}</div>
                 <div className="sfa-q-scale-label">{label}</div>
               </div>
@@ -69,7 +77,7 @@ export default function QuestionScene({ scene, savedAnswer, onAnswer }) {
         {scene.kind === 'mc' && (
           <div className="sfa-q-options">
             {(scene.options || []).map((opt, i) => (
-              <div key={i} className={`sfa-q-option${selected === i ? ' selected' : ''}`} onClick={() => setSelected(i)}>
+              <div key={i} className={`sfa-q-option${selected === i ? ' selected' : ''}`} onClick={() => handleSelect(i)}>
                 <div className="letter">{letters[i]}</div>
                 <div className="copy">{opt.copy}</div>
               </div>
@@ -105,10 +113,12 @@ export default function QuestionScene({ scene, savedAnswer, onAnswer }) {
           </>
         )}
 
-        <button className={`sfa-q-advance${isReady ? ' ready' : ''}`} onClick={handleSubmit}>
-          <span>Continue</span>
-          <span className="arrow"></span>
-        </button>
+        {showAdvance && (
+          <button className={`sfa-q-advance${isReady ? ' ready' : ''}`} onClick={handleSubmit}>
+            <span>Continue</span>
+            <span className="arrow"></span>
+          </button>
+        )}
       </div>
     </div>
   );
