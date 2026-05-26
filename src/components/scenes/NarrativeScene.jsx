@@ -36,16 +36,16 @@ export default function NarrativeScene({ scene }) {
     const disc = <DiscArtEl key={scene.artId} artId={scene.artId} />;
     return (
       <div className="sfa-scene-inner"
-        style={{ display: 'grid', gap: 'clamp(40px,6vw,100px)', alignItems: 'center', gridTemplateColumns: 'minmax(280px,1fr) 1.3fr' }}>
-        <Choreo id="converging" />
-        {layout === 'disc-left' ? <>{disc}{textBlock}</> : <>{textBlock}{disc}</>}
+        style={{ display: 'grid', gap: 'clamp(40px,6vw,100px)', alignItems: 'start', gridTemplateColumns: 'minmax(280px,1fr) 1.3fr', overflowY: 'auto' }}>
+        <Choreo id="sun-arcs" />
+        {layout === 'disc-left' ? <>{disc}<div style={{ paddingBottom: 80 }}>{textBlock}</div></> : <><div style={{ paddingBottom: 80 }}>{textBlock}</div>{disc}</>}
       </div>
     );
   }
 
   return (
     <div className="sfa-scene-inner sfa-layout-centered">
-      <Choreo id="converging" />
+      <Choreo id="sun-arcs" />
       {textBlock}
     </div>
   );

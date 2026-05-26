@@ -15,7 +15,7 @@ import LocationTag from '@/components/chrome/LocationTag';
 import LogoTopRight from '@/components/chrome/LogoTopRight';
 import BLStack from '@/components/chrome/BLStack';
 import TimerRing from '@/components/chrome/TimerRing';
-import BackButton from '@/components/chrome/BackButton';
+import NavStrip from '@/components/chrome/NavStrip';
 
 // SceneSlot (double-rAF)
 import SceneSlot from '@/components/SceneSlot';
@@ -750,9 +750,12 @@ export default function Assessment() {
   const archKey = previewData?.archKey || pickArchetype(R);
   const secondaryKey = previewData?.secondaryKey || pickSecondaryPattern(R, undefined, skinSecondaryPatterns);
   const scene = currentScene;
-  const showBackBtn = current > 0 && scene && !['landing', 'intake', 'crawl', 'results-launch'].includes(scene.type);
   const showChrome = current > 0;
   const isCrawl = scene?.type === 'crawl';
+  const autoAdvanceTypes = ['narrative', 'narrative-scene', 'twist', 'crawl'];
+  const showNavStrip = showChrome && !showResults && scene && !['landing', 'results-launch'].includes(scene.type);
+  const showBackBtn = current > 0 && scene && !['landing', 'intake', 'crawl', 'results-launch'].includes(scene.type);
+  const showSkipBtn = scene && autoAdvanceTypes.includes(scene.type);
 
   function renderSceneContent(s, idx) {
     if (!s) return null;
@@ -808,7 +811,14 @@ export default function Assessment() {
       <LogoTopRight visible={showChrome && !isCrawl} />
       <BLStack visible={showChrome && !isCrawl} current={current} total={scenes.length} />
       <TimerRing visible={timerVisible} running={timerRunning} duration={scene?.duration || 5000} onSkip={skipScene} />
-      <BackButton visible={showBackBtn} onBack={goBack} />
+      <NavStrip
+        visible={showNavStrip}
+        showBack={showBackBtn}
+        showSkip={showSkipBtn}
+        onBack={goBack}
+        onSkip={skipScene}
+        onForward={advance}
+      />
 
       {/* Admin link */}
       <a className={`sfa-admin-link${showChrome ? ' visible' : ''}`} onClick={() => setAdminOpen(true)}>Admin</a>
