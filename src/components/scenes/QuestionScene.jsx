@@ -87,7 +87,7 @@ export default function QuestionScene({ scene, savedAnswer, onAnswer }) {
 
         {scene.kind === 'ranking' && (
           <>
-            <div className="sfa-q-ranking-hint">Click items in the order you would prioritise — first to last.</div>
+            <div className="sfa-q-ranking-hint">Click items in the order you would prioritise ,  first to last.</div>
             <div className="sfa-q-ranking">
               {(scene.items || []).map((item, i) => {
                 const rankPos = ranking.indexOf(i);
@@ -95,7 +95,7 @@ export default function QuestionScene({ scene, savedAnswer, onAnswer }) {
                 return (
                   <div key={i} className={`sfa-q-ranking-item${isAssigned ? ' assigned' : ''}`} onClick={() => handleRank(i)}>
                     <div className={`sfa-q-ranking-rank${!isAssigned ? ' empty' : ''}`}>
-                      {isAssigned ? (rankLabels[rankPos] || rankPos + 1) : '—'}
+                      {isAssigned ? (rankLabels[rankPos] || rankPos + 1) : ', '}
                     </div>
                     <div className="sfa-q-ranking-copy">{item.label}</div>
                   </div>

@@ -25,7 +25,7 @@ export default function EndReflectionScene({ scene, onSubmit }) {
         <div className="sfa-q-prompt" dangerouslySetInnerHTML={{ __html: wordReveal(scene.prompt, 200) }} />
         <textarea className="sfa-q-textarea" placeholder={scene.placeholder || ''}
           value={textVal} onChange={e => setTextVal(e.target.value)} />
-        <div className="sfa-q-text-meta">Optional — saved with your result so you can return to it.</div>
+        <div className="sfa-q-text-meta">Optional ,  saved with your result so you can return to it.</div>
         <button className="sfa-q-advance ready" onClick={() => onSubmit(scene.key, textVal)}>
           <span>Continue</span>
           <span className="arrow"></span>

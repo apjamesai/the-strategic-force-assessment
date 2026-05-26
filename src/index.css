@@ -104,9 +104,9 @@
   --panel: #1e1e23;
   --ink: #ece5d7;
   --ink-soft: #d6cdb9;
-  --ink-mute: #b3a994;
+  --ink-mute: #c8c0a8;
   --ink-dim: #6b6354;
-  --ink-label: #e6dfd1;
+  --ink-label: #f0eadd;
   --amber: #ff5a2c;
   --amber-bright: #ff8a4a;
   --amber-deep: #c93a16;
@@ -1152,6 +1152,15 @@ h2.sfa-display { font-size: clamp(32px, 5.2vw, 76px); }
 @media (hover: none) {
   .sfa-cursor, .sfa-cursor-glow { display: none !important; }
 }
+
+@keyframes sfa-sprite-drift-x { 0%,100%{transform:translateX(0)} 50%{transform:translateX(8px)} }
+@keyframes sfa-sprite-drift-y { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+@keyframes sfa-sprite-shimmer { 0%,100%{opacity:0.4} 50%{opacity:0.85} }
+@keyframes sfa-sprite-spin-slow { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes sfa-sprite-float { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-5px) scale(1.008)} }
+.sfa-scene.active .sfa-choreo { animation: sfa-sprite-drift-x 22s ease-in-out infinite; transform-origin: center; will-change: transform; }
+.sfa-scene.active .sfa-choreo path, .sfa-scene.active .sfa-choreo circle, .sfa-scene.active .sfa-choreo ellipse { animation: sfa-sprite-shimmer 8s ease-in-out infinite; }
+.sfa-scene.active .sfa-choreo line:nth-child(odd) { animation: sfa-sprite-drift-y 14s ease-in-out infinite; }
 
 /* Responsive */
 @media (max-width: 720px) {

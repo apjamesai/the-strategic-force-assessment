@@ -29,7 +29,7 @@ export default function MidpointScene({ scene, onSubmit }) {
           value={textVal} onChange={e => setTextVal(e.target.value)} />
         <div className="sfa-q-text-meta"
           style={{ fontStyle: 'italic', fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--ink-mute)', textTransform: 'none', letterSpacing: '0.02em' }}>
-          — {scene.hint}
+          , {scene.hint}
         </div>
         <button className="sfa-q-advance ready" style={{ marginTop: 40 }}
           onClick={() => onSubmit(scene.key, textVal, scene.isLast)}>

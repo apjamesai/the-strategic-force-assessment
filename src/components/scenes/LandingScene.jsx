@@ -39,14 +39,13 @@ export default function LandingScene({ scene, onNext }) {
           style={{ transitionDelay: '1800ms', marginTop: 48 }}
           dangerouslySetInnerHTML={{ __html: scene.note }}
         />
-        <button className="sfa-landing-cta sfa-reveal-word"
-          style={{ transitionDelay: '2200ms' }}
+        <button className="sfa-landing-cta"
           onClick={onNext}>
           <span>{scene.cta}</span>
           <span className="arrow"></span>
         </button>
       </div>
-      <div className="sfa-landing-meta">est. 12 minutes · 36 questions · 4 closing reflections</div>
+      <div className="sfa-landing-meta">est. 20 minutes · 36 questions · 4 closing reflections</div>
     </div>
   );
 }
