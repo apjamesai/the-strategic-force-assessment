@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ARCHETYPES, SECONDARY_PATTERNS, MOCK_PROFILES, computeResults, pickArchetype, pickSecondaryPattern } from '@/lib/sfa/engine';
+import { SKIN_LIST, getActiveSkinId, setActiveSkinId } from '@/lib/sfa/skins/index';
 
 const ADMIN_SECONDARY_BASE_DEFAULT = 'hidden_drifter';
 
@@ -87,13 +88,25 @@ export default function AdminPage() {
           {tab === 'skins' && (
             <div>
               <div className="sfa-admin-section-title">Story skins</div>
-              <div className="sfa-admin-section-sub">Skins wrap the same 12-practice assessment in different stories.</div>
+              <div className="sfa-admin-section-sub">Skins wrap the same 12-practice assessment in different narrative universes.</div>
               <div className="sfa-admin-arch-grid">
-                <div className="sfa-admin-arch-card" style={{ cursor: 'default', borderLeft: '2px solid var(--amber)' }}>
-                  <div className="tag">ACTIVE · DEFAULT</div>
-                  <div className="name">The Strategic Force Trial</div>
-                  <div className="head">Cinematic space-opera prologue · The Coalition vs Commander Marrick</div>
-                </div>
+                {SKIN_LIST.map(skin => {
+                  const isActive = skin.id === getActiveSkinId();
+                  return (
+                    <div key={skin.id} className="sfa-admin-arch-card"
+                      style={isActive ? { cursor: 'default', borderLeft: '2px solid var(--amber)' } : {}}>
+                      {isActive && <div className="tag">ACTIVE</div>}
+                      <div className="name">{skin.name}</div>
+                      <div className="head">{skin.tagline}</div>
+                      {!isActive && (
+                        <button className="sfa-admin-btn" style={{ marginTop: 8 }}
+                          onClick={() => { setActiveSkinId(skin.id); window.location.reload(); }}>
+                          Use this skin
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               <div style={{ marginTop: 24 }}>
                 <a href="/admin/image-studio"

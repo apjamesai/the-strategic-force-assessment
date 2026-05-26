@@ -1,5 +1,6 @@
 import React from 'react';
 import { getChoreoSVG } from '@/lib/sfa/discArt';
+import { SKIN_LIST, getActiveSkinId, setActiveSkinId } from '@/lib/sfa/skins/index';
 
 function Choreo({ id }) {
   return <div dangerouslySetInnerHTML={{ __html: getChoreoSVG(id) }} />;
@@ -22,10 +23,30 @@ export default function LandingScene({ scene, onNext }) {
     `<span class="sfa-reveal-word" style="transition-delay:${i * 120 + 400}ms">${w}</span>`
   ).join(' ');
 
+  const activeSkinId = getActiveSkinId();
+
   return (
     <div className="sfa-scene-inner sfa-layout-centered">
       <div>
         <Choreo id="sun-arcs" />
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 28 }}>
+          {SKIN_LIST.map(skin => {
+            const isActive = skin.id === activeSkinId;
+            return (
+              <button key={skin.id}
+                onClick={() => { if (!isActive) { setActiveSkinId(skin.id); window.location.reload(); } }}
+                style={{
+                  fontFamily: 'var(--sans)', fontSize: 10, letterSpacing: '0.3em',
+                  textTransform: 'uppercase', padding: '8px 14px', background: 'transparent',
+                  border: isActive ? '1px solid var(--amber)' : '1px solid rgba(255,90,44,0.25)',
+                  color: isActive ? 'var(--amber)' : 'var(--ink-mute)',
+                  cursor: isActive ? 'default' : 'pointer', transition: 'all 0.4s ease'
+                }}>
+                {skin.name}
+              </button>
+            );
+          })}
+        </div>
         <div className="sfa-eyebrow sfa-reveal-word">{scene.locationLabel}</div>
         <h1
           className="sfa-landing-title"
