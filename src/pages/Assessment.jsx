@@ -1139,26 +1139,36 @@ export default function Assessment() {
   }, [current, user]);
 
   // ─── Navigation
+  const scenesLengthRef = useRef(scenes.length);
+  scenesLengthRef.current = scenes.length;
+
   const goNext = useCallback(() => {
     clearTimeout(timerRef.current);
     clearTimeout(whooshRef.current);
-    if (current < scenes.length - 1) {
-      sceneKey.current++;
-      setCurrent(c => c + 1);
-      window.scrollTo(0, 0);
-    }
-  }, [current, scenes.length]);
+    sceneKey.current++;
+    setCurrent(c => {
+      if (c < scenesLengthRef.current - 1) return c + 1;
+      return c;
+    });
+    window.scrollTo(0, 0);
+  }, []);
+
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
 
   const goBack = useCallback(() => {
-    if (current <= 0) return;
     clearTimeout(timerRef.current);
     clearTimeout(whooshRef.current);
-    const newIdx = current - 1;
-    const newScores = rebuildScores(scenes, Object.fromEntries(Object.entries(answers).filter(([k]) => +k < newIdx)));
-    setScores(newScores);
-    sceneKey.current++;
-    setCurrent(newIdx);
-  }, [current, answers, scenes]);
+    setCurrent(c => {
+      if (c <= 0) return c;
+      const newIdx = c - 1;
+      const newScores = rebuildScores(scenes, Object.fromEntries(Object.entries(answersRef.current).filter(([k]) => +k < newIdx)));
+      setScores(newScores);
+      sceneKey.current++;
+      return newIdx;
+    });
+    window.scrollTo(0, 0);
+  }, [scenes]);
 
   const skipScene = () => {
     clearTimeout(timerRef.current);
@@ -1476,7 +1486,13 @@ export default function Assessment() {
               <LandingScene scene={scene} onNext={goNext} />
             )}
             {scene.type === 'intake' && (
-              <IntakeScene scene={scene} onSubmit={(u) => { setUser(u); goNext(); }} />
+              <IntakeScene scene={scene} onSubmit={(u) => {
+                setUser(u);
+                // Use functional update to ensure we advance regardless of stale closure
+                sceneKey.current++;
+                setCurrent(c => c < scenesLengthRef.current - 1 ? c + 1 : c);
+                window.scrollTo(0, 0);
+              }} />
             )}
             {scene.type === 'crawl' && (
               <CrawlScene scene={scene} />
