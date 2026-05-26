@@ -89,6 +89,15 @@
    ============================================================ */
 
 /* Assessment wrapper resets */
+.sfa-root button, .sfa-root .sfa-landing-cta,
+.sfa-root .sfa-intake-gender-opt, .sfa-root .sfa-q-option,
+.sfa-root .sfa-q-scale-item, .sfa-root .sfa-q-ranking-item,
+.sfa-root .sfa-q-advance.ready {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 20;
+}
+
 .sfa-root {
   --bg: #0c0a0a;
   --bg-deep: #060505;
@@ -145,7 +154,7 @@
   transition: opacity 2s var(--ease);
 }
 .sfa-particles {
-  position: fixed; inset: 0; pointer-events: none; z-index: 3;
+  position: fixed; inset: 0; pointer-events: none; z-index: 3; display: block;
 }
 
 /* Custom cursor */

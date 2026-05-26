@@ -1099,14 +1099,26 @@ export default function Assessment() {
   const glowAnimRef = useRef(null);
   const sceneKey = useRef(0);
 
-  // ─── Personalized scenes helper
+  // ─── Stable refs so callbacks never go stale
+  const currentRef = useRef(current);
+  currentRef.current = current;
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
+  const scoresRef = useRef(scores);
+  scoresRef.current = scores;
+  const userRef = useRef(user);
+  userRef.current = user;
+  const isWhooshingRef = useRef(isWhooshing);
+  isWhooshingRef.current = isWhooshing;
+
+  // ─── Personalized scenes helper (reads from refs so always fresh)
   const getScene = useCallback((idx) => {
     const raw = scenes[idx];
     if (!raw) return null;
-    const flags = getRunningFlags(scores);
+    const flags = getRunningFlags(scoresRef.current);
     const conditional = applyConditional(raw, flags);
-    return personalizeScene(conditional, user);
-  }, [scenes, scores, user]);
+    return personalizeScene(conditional, userRef.current);
+  }, [scenes]);
 
   // ─── Progress bar
   const totalQ = scenes.filter(s => s.type === 'question' || s.type === 'end-reflection').length;
@@ -1121,6 +1133,17 @@ export default function Assessment() {
     return () => clearTimeout(t);
   }, [current]);
 
+  // ─── Core advance function — fully stable, uses only refs
+  const advance = useCallback(() => {
+    clearTimeout(timerRef.current);
+    clearTimeout(whooshRef.current);
+    sceneKey.current++;
+    setCurrent(c => (c < scenes.length - 1 ? c + 1 : c));
+    window.scrollTo(0, 0);
+  }, [scenes.length]);
+
+  const goNext = advance; // alias
+
   // ─── Auto-advance for timed scenes
   useEffect(() => {
     const scene = getScene(current);
@@ -1130,31 +1153,13 @@ export default function Assessment() {
       if (scene.type === 'crawl') {
         whooshRef.current = setTimeout(() => setIsWhooshing(true), Math.max(0, scene.duration - 2400));
       }
-      timerRef.current = setTimeout(() => goNext(), scene.duration);
+      timerRef.current = setTimeout(() => advance(), scene.duration);
     }
     return () => {
       clearTimeout(timerRef.current);
       clearTimeout(whooshRef.current);
     };
-  }, [current, user]);
-
-  // ─── Navigation
-  const scenesLengthRef = useRef(scenes.length);
-  scenesLengthRef.current = scenes.length;
-
-  const goNext = useCallback(() => {
-    clearTimeout(timerRef.current);
-    clearTimeout(whooshRef.current);
-    sceneKey.current++;
-    setCurrent(c => {
-      if (c < scenesLengthRef.current - 1) return c + 1;
-      return c;
-    });
-    window.scrollTo(0, 0);
-  }, []);
-
-  const answersRef = useRef(answers);
-  answersRef.current = answers;
+  }, [current, advance, getScene]);
 
   const goBack = useCallback(() => {
     clearTimeout(timerRef.current);
@@ -1170,40 +1175,41 @@ export default function Assessment() {
     window.scrollTo(0, 0);
   }, [scenes]);
 
-  const skipScene = () => {
+  const skipScene = useCallback(() => {
     clearTimeout(timerRef.current);
     clearTimeout(whooshRef.current);
-    const scene = getScene(current);
-    if (scene && scene.type === 'crawl' && !isWhooshing) {
+    const scene = getScene(currentRef.current);
+    if (scene && scene.type === 'crawl' && !isWhooshingRef.current) {
       setIsWhooshing(true);
-      setTimeout(() => goNext(), 1600);
+      setTimeout(() => advance(), 1600);
     } else {
-      goNext();
+      advance();
     }
-  };
+  }, [advance, getScene]);
 
-  // ─── Answer handlers
-  const handleAnswer = (value, textVal) => {
-    const scene = getScene(current);
-    const newAnswers = { ...answers, [current]: value };
+  // ─── Answer handlers (use refs for current/answers to avoid stale closures)
+  const handleAnswer = useCallback((value, textVal) => {
+    const c = currentRef.current;
+    const scene = getScene(c);
+    const newAnswers = { ...answersRef.current, [c]: value };
     setAnswers(newAnswers);
     const newScores = rebuildScores(scenes, newAnswers);
     setScores(newScores);
-    if (scene.kind === 'short-text') {
-      setReflections(prev => ({ ...prev, [`midtext_${current}`]: textVal || '' }));
+    if (scene && scene.kind === 'short-text') {
+      setReflections(prev => ({ ...prev, [`midtext_${c}`]: textVal || '' }));
     }
-    goNext();
-  };
+    advance();
+  }, [scenes, advance, getScene]);
 
-  const handleMidpoint = (key, textVal) => {
+  const handleMidpoint = useCallback((key, textVal) => {
     setReflections(prev => ({ ...prev, [key]: textVal }));
-    goNext();
-  };
+    advance();
+  }, [advance]);
 
-  const handleReflection = (key, textVal) => {
+  const handleReflection = useCallback((key, textVal) => {
     setReflections(prev => ({ ...prev, [key]: textVal }));
-    goNext();
-  };
+    advance();
+  }, [advance]);
 
   // ─── Results
   const openResults = () => {
@@ -1360,15 +1366,10 @@ export default function Assessment() {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape' && adminOpen) { setAdminOpen(false); return; }
-      const scene = getScene(current);
-      if (!scene) return;
-      if ((e.key === 'Enter' || e.key === ' ') && document.activeElement.tagName !== 'TEXTAREA') {
-        e.preventDefault();
-      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [adminOpen, current, getScene]);
+  }, [adminOpen]);
 
   // ─── Compute results for display
   const R = previewData?.R || computeResults(scores);
@@ -1483,16 +1484,10 @@ export default function Assessment() {
           <div key={sceneKey.current}
             className={`sfa-scene${activeScene ? ' active' : ''}${isCrawl ? ' sfa-crawl-scene' : ''}${isWhooshing ? ' whooshing' : ''}`}>
             {scene.type === 'landing' && (
-              <LandingScene scene={scene} onNext={goNext} />
+              <LandingScene scene={scene} onNext={advance} />
             )}
             {scene.type === 'intake' && (
-              <IntakeScene scene={scene} onSubmit={(u) => {
-                setUser(u);
-                // Use functional update to ensure we advance regardless of stale closure
-                sceneKey.current++;
-                setCurrent(c => c < scenesLengthRef.current - 1 ? c + 1 : c);
-                window.scrollTo(0, 0);
-              }} />
+              <IntakeScene scene={scene} onSubmit={(u) => { setUser(u); advance(); }} />
             )}
             {scene.type === 'crawl' && (
               <CrawlScene scene={scene} />
