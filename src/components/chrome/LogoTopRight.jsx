@@ -1,5 +1,10 @@
 import React from 'react';
 
+/**
+ * Mandarin logo. Renders the geometric brand mark (orange triangle/lozenge)
+ * + the "mandarin" wordmark as inline SVG. The wordmark is drawn as a
+ * <text> element so it does not depend on having every glyph vectorised.
+ */
 export default function LogoTopRight({ visible }) {
   return (
     <a
@@ -8,19 +13,27 @@ export default function LogoTopRight({ visible }) {
       onClick={e => e.preventDefault()}
       aria-label="Mandarin"
     >
-      <svg viewBox="0 0 1500 240" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 360 60" xmlns="http://www.w3.org/2000/svg"
+        style={{ display: 'block', height: '100%', width: 'auto' }}>
         <defs>
-          <linearGradient id="mandarin-grad" x1="65.21" y1="148.81" x2="131.51" y2="113.83" gradientUnits="userSpaceOnUse">
+          <linearGradient id="mandarin-grad" x1="0" y1="60" x2="60" y2="0" gradientUnits="userSpaceOnUse">
             <stop offset="0" stopColor="#ff6a1f"/>
             <stop offset="1" stopColor="#ff481d"/>
           </linearGradient>
         </defs>
-        <path fill="#ff481d" d="M489.26,114.79v80.05H453.48V116.37c0-19.61-10.08-30.22-25.46-30.22-15.62,0-26.76,10.61-26.76,30.22v78.47H365.73V116.37c0-19.61-10.33-30.22-25.44-30.22-15.64,0-26.78,10.61-26.78,30.22v78.47H278l1.27-109.92-3.71-10.26,23.39-17.35,14.57,17.45c7.42-11.67,20.14-20.42,39.5-20.42,16.95,0,31.81,7.17,40.29,23.06,8-12.72,23.07-23.06,45.6-23.06,29.16,0,50.36,18.29,50.36,60.45"/>
-        <path fill="#ff481d" d="M622.57,125.92c0-26-18.56-39.77-38.45-39.77s-38.44,14-38.44,39.77,18.56,39.76,38.44,39.76,38.45-13.78,38.45-39.76m-111.88,0c0-47.72,34.19-71.58,66.27-71.58,24.66,0,40.57,13.53,44,21.22h.78V57h35.53V194.84H621.76V176.29H621c-3.45,7.69-19.36,21.21-44,21.21-32.08,0-66.27-23.86-66.27-71.58"/>
-        <path fill="#ff481d" d="M819.32,113.72v81.12H783.8V119.56c0-20.15-10.87-33.4-29.44-33.4-18.28,0-29.42,13.25-29.42,33.4v75.28H689.42V57h35.52V75.81c7.69-12.19,21.47-21.47,42.14-21.47,28.37,0,52.24,17.5,52.24,59.38"/>
-        <path fill="#ff481d" d="M1277.28,55.4V89.34h0a51.87,51.87,0,0,0-9-.8c-26.77,0-43.47,18.56-43.47,46.14v60.17h-35.53V57h35.53v35.8c4.77-21.22,18.3-38.44,43.22-38.44a37.63,37.63,0,0,1,9.27,1"/>
-        <path fill="#ff481d" d="M1301.19,194.84h35.54V57h-35.54Zm0-148.51h35.54V14.4h-35.54Z"/>
-        <polygon fill="url(#mandarin-grad)" points="139.43 0 92.31 35.2 85.37 100.69 67.33 84.92 34.93 109.09 27.89 154.91 27.88 154.9 16.66 141.62 0 154.03 19.87 210 61.46 193.17 67.63 155.12 96.45 202.36 131.35 188.28 133.23 119.37 170.1 195.5 232.37 170.25 139.43 0"/>
+        {/* Geometric mark, condensed to a 60x60 box */}
+        <g transform="translate(2,4) scale(0.235)">
+          <polygon fill="url(#mandarin-grad)" points="139.43 0 92.31 35.2 85.37 100.69 67.33 84.92 34.93 109.09 27.89 154.91 27.88 154.9 16.66 141.62 0 154.03 19.87 210 61.46 193.17 67.63 155.12 96.45 202.36 131.35 188.28 133.23 119.37 170.1 195.5 232.37 170.25 139.43 0"/>
+        </g>
+        {/* Wordmark, rendered as text */}
+        <text x="78" y="42"
+          fill="#ff481d"
+          fontFamily="var(--sans), Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+          fontSize="42"
+          fontWeight="700"
+          letterSpacing="-1">
+          mandarin
+        </text>
       </svg>
     </a>
   );
