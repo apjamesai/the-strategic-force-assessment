@@ -5,6 +5,7 @@ import {
 } from '@/lib/sfa/engine';
 import { SKINS, SKIN_LIST, getActiveSkinId, setActiveSkinId } from '@/lib/sfa/skins/index';
 import QuestionEditor from '@/components/admin/QuestionEditor';
+import SkinEditor from '@/components/admin/SkinEditor';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a15850b10cbc3f2a02765fd/f1da5dcfe_Mandarin_Logo_Horizontal_Orange_Gradient.svg';
 
@@ -106,6 +107,7 @@ export default function AdminPage() {
   const [rules, setRules]   = useState(() => lsGet(LS.rules, { ...RULE_DEFAULTS }));
   const [content, setContent] = useState(() => lsGet(LS.content, {}));
   const [scoring, setScoring] = useState(() => lsGet(LS.scoring, {}));
+  const [skinEditorState, setSkinEditorState] = useState(null); // { skinId, isNew }
 
   const activeSkin = SKINS[activeSkinIdState] || SKINS.force_trial;
 
@@ -209,7 +211,39 @@ export default function AdminPage() {
         </aside>
 
         {/* ── Content ── */}
-        {tab === 'questions' ? (
+        {skinEditorState ? (
+          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <SkinEditor
+              skinId={skinEditorState.skinId}
+              allSkins={{ ...SKINS, ...JSON.parse(localStorage.getItem('mandarin.assessment.skins') || '{}') }}
+              isNew={skinEditorState.isNew}
+              onSave={(data) => {
+                const customSkins = JSON.parse(localStorage.getItem('mandarin.assessment.skins') || '{}');
+                const allSkins = { ...SKINS, ...customSkins };
+                const skinId = skinEditorState.skinId;
+                let updated;
+                if (skinEditorState.isNew) {
+                  const newId = `custom_${Date.now()}`;
+                  updated = { ...customSkins, [newId]: {
+                    id: newId, ...data,
+                    scenes: SKINS.force_trial.scenes,
+                    archetypes: SKINS.force_trial.archetypes,
+                    secondaryPatterns: SKINS.force_trial.secondaryPatterns,
+                    riskCopy: SKINS.force_trial.riskCopy,
+                    nextSteps: SKINS.force_trial.nextSteps,
+                    imageMap: {}, bodyClasses: [],
+                  }};
+                } else {
+                  updated = { ...customSkins, [skinId]: { ...allSkins[skinId], ...data } };
+                }
+                localStorage.setItem('mandarin.assessment.skins', JSON.stringify(updated));
+                setSkinEditorState(null);
+                window.dispatchEvent(new Event('sfa:skin-change'));
+              }}
+              onCancel={() => setSkinEditorState(null)}
+            />
+          </div>
+        ) : tab === 'questions' ? (
           <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
             <QuestionEditor
               activeSkin={activeSkin}
@@ -221,7 +255,7 @@ export default function AdminPage() {
           <main style={{ flex: 1, padding: 'clamp(24px, 4vw, 40px) clamp(20px, 4vw, 48px)', overflowY: 'auto', minWidth: 0 }}>
             {tab === 'archetypes' && <ArchetypesTab onPreview={handlePreview} secondaryBase={secondaryBase} setSecondaryBase={setSecondaryBase} />}
             {tab === 'rules'      && <RulesTab rules={rules} setRules={setRules} />}
-            {tab === 'skins'      && <SkinsTab activeSkinIdState={activeSkinIdState} switchSkin={switchSkin} />}
+            {tab === 'skins'      && <SkinsTab activeSkinIdState={activeSkinIdState} switchSkin={switchSkin} onEdit={(id, isNew) => setSkinEditorState({ skinId: id, isNew })} />}
             {tab === 'results'    && <ResultsTab />}
           </main>
         )}
@@ -336,102 +370,9 @@ function RulesTab({ rules, setRules }) {
 }
 
 /* ── Skins ── */
-function SkinsTab({ activeSkinIdState, switchSkin }) {
+function SkinsTab({ activeSkinIdState, switchSkin, onEdit }) {
   const [customSkins, setCustomSkins] = useState(() => lsGet('mandarin.assessment.skins', {}));
-  const [editingSkinId, setEditingSkinId] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', tagline: '', theme: {} });
-  const [showNewForm, setShowNewForm] = useState(false);
-
   const allSkins = { ...SKINS, ...customSkins };
-  
-  // Extract all CSS custom property keys from the skin being edited.
-  // We use the current editForm.theme (already stripped of '--' prefixes) as source of truth.
-  // Falls back to the skin being edited or force_trial for initial population.
-  const getAllThemeKeys = () => {
-    const formTheme = editForm.theme || {};
-    // Seed from base skin if form is empty
-    const baseTheme = editingSkinId ? (allSkins[editingSkinId]?.theme || {}) : (SKINS.force_trial.theme || {});
-    const strippedBase = {};
-    Object.entries(baseTheme).forEach(([k, v]) => {
-      strippedBase[k.startsWith('--') ? k.slice(2) : k] = v;
-    });
-    const merged = { ...strippedBase, ...formTheme };
-
-    return Object.keys(merged)
-      .filter(key => !key.includes('Import') && !key.includes('fontImport'))
-      .sort()
-      .map(key => {
-        const isColor = /(amber|brand|ink|bg|panel|color)/i.test(key) && !/(serif|sans|font|ease)/i.test(key);
-        const label = key.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-        return { key, label: `${label} (--${key})`, type: isColor ? 'color' : 'text' };
-      });
-  };
-
-  const startEdit = (skinId) => {
-    const skin = allSkins[skinId];
-    // Strip the '--' prefix from theme keys for the editor form, since they're stored with '--' but edited without
-    const rawTheme = skin.theme || {};
-    const strippedTheme = {};
-    Object.entries(rawTheme).forEach(([k, v]) => {
-      strippedTheme[k.startsWith('--') ? k.slice(2) : k] = v;
-    });
-    setEditForm({ 
-      name: skin.name, 
-      tagline: skin.tagline,
-      theme: strippedTheme
-    });
-    setEditingSkinId(skinId);
-  };
-
-  const repackTheme = (themeForm) => {
-    const out = {};
-    Object.entries(themeForm).forEach(([k, v]) => {
-      if (v === '' || v === undefined) return;
-      out[k.startsWith('--') ? k : `--${k}`] = v;
-    });
-    return out;
-  };
-
-  const saveEdit = () => {
-    if (!editForm.name.trim()) return;
-    const updated = { 
-      ...customSkins, 
-      [editingSkinId]: { 
-        ...allSkins[editingSkinId], 
-        name: editForm.name,
-        tagline: editForm.tagline,
-        theme: repackTheme(editForm.theme) 
-      } 
-    };
-    setCustomSkins(updated);
-    lsSet('mandarin.assessment.skins', updated);
-    setEditingSkinId(null);
-  };
-
-  const createNewSkin = () => {
-    if (!editForm.name.trim()) return;
-    const newId = `custom_${Date.now()}`;
-    const newSkin = {
-      id: newId,
-      name: editForm.name,
-      tagline: editForm.tagline,
-      scenes: SKINS.force_trial.scenes,
-      archetypes: SKINS.force_trial.archetypes,
-      secondaryPatterns: SKINS.force_trial.secondaryPatterns,
-      riskCopy: SKINS.force_trial.riskCopy,
-      nextSteps: SKINS.force_trial.nextSteps,
-      imageMap: {},
-      bodyClasses: [],
-      theme: Object.keys(editForm.theme || {}).length > 0
-        ? repackTheme(editForm.theme)
-        : { ...SKINS.force_trial.theme },
-    };
-    const updated = { ...customSkins, [newId]: newSkin };
-    setCustomSkins(updated);
-    lsSet('mandarin.assessment.skins', updated);
-    setShowNewForm(false);
-    setEditForm({ name: '', tagline: '', theme: {} });
-  };
 
   const deleteSkin = (skinId) => {
     if (!customSkins[skinId]) return;
@@ -441,133 +382,16 @@ function SkinsTab({ activeSkinIdState, switchSkin }) {
     lsSet('mandarin.assessment.skins', updated);
   };
 
+  // Refresh customSkins from localStorage when returning from editor
+  useEffect(() => {
+    const onSkinChange = () => setCustomSkins(lsGet('mandarin.assessment.skins', {}));
+    window.addEventListener('sfa:skin-change', onSkinChange);
+    return () => window.removeEventListener('sfa:skin-change', onSkinChange);
+  }, []);
+
   return (
     <div>
-      <SectionHead title="Skins" sub="Each skin wraps the same 12-practice assessment in a different narrative universe." />
-
-      {/* Edit modal */}
-      {editingSkinId && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, overflow: 'auto' }}>
-          <div style={{ background: C.white, borderRadius: 4, padding: 28, width: '90%', maxWidth: 600, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', margin: '20px auto' }}>
-            <h3 style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 20, textTransform: 'uppercase' }}>Edit Skin</h3>
-            
-            {/* Basic info */}
-            <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-              <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>Basic Info</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div>
-                  <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Name</label>
-                  <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={inputStyle} />
-                </div>
-                <div>
-                  <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Tagline</label>
-                  <textarea value={editForm.tagline} onChange={e => setEditForm({ ...editForm, tagline: e.target.value })} style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} />
-                </div>
-              </div>
-            </div>
-
-            {/* Theme variables */}
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>Theme Variables</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-                {getAllThemeKeys().map(field => {
-                  const val = editForm.theme[field.key] ?? '';
-                  const isHex = /^#[0-9a-fA-F]{3,6}$/.test(val.trim());
-                  const showPicker = field.type === 'color' && (isHex || val === '');
-                  const updateTheme = (v) => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: v } });
-                  return (
-                    <div key={field.key}>
-                      <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 8, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 4 }}>{field.label}</label>
-                      {showPicker ? (
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <input type="color" value={isHex ? val : '#000000'} onChange={e => updateTheme(e.target.value)}
-                            style={{ width: 40, height: 36, border: `1px solid ${C.border}`, borderRadius: 2, cursor: 'pointer', flexShrink: 0 }}
-                          />
-                          <input type="text" value={val} onChange={e => updateTheme(e.target.value)}
-                            style={{ ...inputStyle, flex: 1, fontSize: 11 }} placeholder="#000000"
-                          />
-                        </div>
-                      ) : (
-                        <input type="text" value={val} onChange={e => updateTheme(e.target.value)}
-                          style={{ ...inputStyle, fontSize: 11 }}
-                          placeholder={field.key.includes('serif') ? "'Georgia', serif" : field.key.includes('sans') ? "'Inter', sans-serif" : '…'}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={saveEdit} style={btnOrange}>Save</button>
-              <button onClick={() => setEditingSkinId(null)} style={btnOutline}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* New skin modal */}
-      {showNewForm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, overflow: 'auto' }}>
-          <div style={{ background: C.white, borderRadius: 4, padding: 28, width: '90%', maxWidth: 600, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', margin: '20px auto' }}>
-            <h3 style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 20, textTransform: 'uppercase' }}>New Skin</h3>
-            
-            {/* Basic info */}
-            <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-              <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>Basic Info</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div>
-                  <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Name</label>
-                  <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} placeholder="e.g., Space Odyssey" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Tagline</label>
-                  <textarea value={editForm.tagline} onChange={e => setEditForm({ ...editForm, tagline: e.target.value })} placeholder="e.g., Explore leadership in the cosmos" style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} />
-                </div>
-              </div>
-            </div>
-
-            {/* Theme variables */}
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>Theme Variables</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-                {getAllThemeKeys().map(field => {
-                  const val = editForm.theme[field.key] ?? '';
-                  const isHex = /^#[0-9a-fA-F]{3,6}$/.test(val.trim());
-                  const showPicker = field.type === 'color' && (isHex || val === '');
-                  const updateTheme = (v) => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: v } });
-                  return (
-                    <div key={field.key}>
-                      <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 8, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 4 }}>{field.label}</label>
-                      {showPicker ? (
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <input type="color" value={isHex ? val : '#000000'} onChange={e => updateTheme(e.target.value)}
-                            style={{ width: 40, height: 36, border: `1px solid ${C.border}`, borderRadius: 2, cursor: 'pointer', flexShrink: 0 }}
-                          />
-                          <input type="text" value={val} onChange={e => updateTheme(e.target.value)}
-                            style={{ ...inputStyle, flex: 1, fontSize: 11 }} placeholder="#000000"
-                          />
-                        </div>
-                      ) : (
-                        <input type="text" value={val} onChange={e => updateTheme(e.target.value)}
-                          style={{ ...inputStyle, fontSize: 11 }}
-                          placeholder={field.key.includes('serif') ? "'Georgia', serif" : field.key.includes('sans') ? "'Inter', sans-serif" : '…'}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={createNewSkin} style={btnOrange}>Create</button>
-              <button onClick={() => { setShowNewForm(false); setEditForm({ name: '', tagline: '', theme: {} }); }} style={btnOutline}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SectionHead title="Skins" sub="Each skin wraps the same 12-practice assessment in a different narrative universe. Click Edit to open the live preview editor." />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16, marginBottom: 32 }}>
         {Object.entries(allSkins).map(([key, skin]) => {
@@ -581,24 +405,16 @@ function SkinsTab({ activeSkinIdState, switchSkin }) {
               padding: '20px 18px', borderRadius: 2,
               display: 'flex', flexDirection: 'column', gap: 10,
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                <div>
-                  {isActive && <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 4 }}>Active</div>}
-                  {isCustom && <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.muted, marginBottom: 4 }}>Custom</div>}
-                </div>
+              <div>
+                {isActive && <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 4 }}>Active</div>}
+                {isCustom && <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.muted, marginBottom: 4 }}>Custom</div>}
               </div>
               <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 17, color: C.text }}>{skin.name}</div>
               <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.muted, lineHeight: 1.5, flex: 1 }}>{skin.tagline}</div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button style={{ ...btnOutline, flex: 1, fontSize: 9 }} onClick={() => startEdit(key)}>Edit</button>
-                {!isActive && (
-                  <button style={btnOrange} onClick={() => switchSkin(key)}>
-                    Use
-                  </button>
-                )}
-                {isCustom && (
-                  <button style={{ ...btnOutline, color: '#ff6b6b', borderColor: '#ffb3b3' }} onClick={() => deleteSkin(key)}>Delete</button>
-                )}
+                <button style={{ ...btnOutline, flex: 1, fontSize: 9 }} onClick={() => onEdit(key, false)}>Edit</button>
+                {!isActive && <button style={btnOrange} onClick={() => switchSkin(key)}>Use</button>}
+                {isCustom && <button style={{ ...btnOutline, color: '#ff6b6b', borderColor: '#ffb3b3' }} onClick={() => deleteSkin(key)}>Delete</button>}
               </div>
             </div>
           );
@@ -606,17 +422,8 @@ function SkinsTab({ activeSkinIdState, switchSkin }) {
       </div>
 
       <div style={{ display: 'flex', gap: 12 }}>
-        <button onClick={() => {
-          // Pre-seed with force_trial theme (stripped of '--') so all fields are populated
-          const baseTheme = {};
-          Object.entries(SKINS.force_trial.theme || {}).forEach(([k, v]) => {
-            baseTheme[k.startsWith('--') ? k.slice(2) : k] = v;
-          });
-          setEditForm({ name: '', tagline: '', theme: baseTheme });
-          setShowNewForm(true);
-        }} style={btnOrange}>+ New Skin</button>
-        <a href="/admin/image-studio"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 10, ...btnOutline, textDecoration: 'none' }}>
+        <button onClick={() => onEdit(`__new__${Date.now()}`, true)} style={btnOrange}>+ New Skin</button>
+        <a href="/admin/image-studio" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, ...btnOutline, textDecoration: 'none' }}>
           Image Studio →
         </a>
       </div>
