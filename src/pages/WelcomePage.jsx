@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SKIN_LIST, getActiveSkinId, setActiveSkinId } from '@/lib/sfa/skins/index';
 import { BarChart2, Brain, AlertTriangle, Target, FlaskConical, Download } from 'lucide-react';
 
@@ -67,6 +67,19 @@ export default function WelcomePage() {
     window.location.href = '/assessment';
   };
 
+  React.useEffect(() => {
+    document.documentElement.style.overflow = 'auto';
+    document.body.style.overflow = 'auto';
+    document.body.style.height = 'auto';
+    document.documentElement.style.height = 'auto';
+    return () => {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+      document.body.style.height = '';
+      document.documentElement.style.height = '';
+    };
+  }, []);
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -74,8 +87,6 @@ export default function WelcomePage() {
       color: C.text,
       fontFamily: "'Roboto', sans-serif",
       cursor: 'auto',
-      overflowY: 'auto',
-      overflowX: 'hidden',
     }}>
 
       {/* Nav */}
