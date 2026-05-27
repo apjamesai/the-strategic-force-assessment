@@ -1184,3 +1184,40 @@ h2.sfa-display { font-size: clamp(32px, 5.2vw, 76px); }
   .sfa-scene { align-items: flex-start; padding-top: 8vh; }
   .sfa-landing-meta { display: none; }
 }
+/* ─── Enhanced asset animations (non-text choreography) ──────── */
+/* The choreo lines/circles already animate via sfa-sprite-* keyframes
+   below. These rules amp up disc-art motion and add per-feature animations
+   so the eye sees clear movement on every active scene. */
+
+.sfa-scene.active .sfa-disc {
+  animation: sfa-disc-rise 1.6s var(--ease) both, sfa-float 9s ease-in-out 1.6s infinite;
+}
+.sfa-scene.active .sfa-disc-art {
+  animation: sfa-breathe 9s ease-in-out infinite, sfa-disc-fade-in 2s var(--ease) both;
+}
+.sfa-scene.active .sfa-disc-art circle[fill*="amber"],
+.sfa-scene.active .sfa-disc-art ellipse[fill*="amber"] {
+  transform-origin: center;
+  animation: sfa-halo-pulse 6s ease-in-out infinite;
+}
+
+/* Stronger choreo motion */
+.sfa-scene.active .sfa-choreo {
+  animation: sfa-sprite-drift-x 16s ease-in-out infinite, sfa-choreo-glow 6s ease-in-out infinite;
+}
+.sfa-scene.active .sfa-choreo path {
+  stroke-dasharray: 4 4;
+  animation: sfa-sprite-shimmer 6s ease-in-out infinite, sfa-dash-march 24s linear infinite;
+}
+.sfa-scene.active .sfa-choreo.sun-arcs circle {
+  transform-origin: center;
+  animation: sfa-halo-pulse 5s ease-in-out infinite;
+}
+.sfa-scene.active .sfa-choreo line:nth-child(even) {
+  animation: sfa-sprite-drift-y 18s ease-in-out infinite reverse;
+}
+
+@keyframes sfa-disc-rise   { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes sfa-disc-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sfa-choreo-glow { 0%, 100% { filter: drop-shadow(0 0 0 transparent); } 50% { filter: drop-shadow(0 0 8px var(--amber-glow)); } }
+@keyframes sfa-dash-march  { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -120; } }
