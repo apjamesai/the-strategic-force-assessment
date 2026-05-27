@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider } from '@/lib/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import WelcomePage from './pages/WelcomePage';
 import Assessment from './pages/Assessment';
 import AdminPage from './pages/AdminPage';
 import ImageStudioPage from './pages/ImageStudioPage';
@@ -24,7 +25,8 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <Routes>
-            <Route path="/" element={<Assessment />} />
+            <Route path="/" element={<WelcomePage />} />
+            <Route path="/assessment" element={<Assessment />} />
 
             <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/" replace />} />}>
               <Route path="/admin" element={<AdminPage />} />

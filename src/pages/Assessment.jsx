@@ -23,7 +23,6 @@ import SceneSlot from '@/components/SceneSlot';
 
 // Scene components
 import LandingScene from '@/components/scenes/LandingScene';
-import SkinSelectScene from '@/components/scenes/SkinSelectScene';
 import IntakeScene from '@/components/scenes/IntakeScene';
 import CrawlScene from '@/components/scenes/CrawlScene';
 import NarrativeScene from '@/components/scenes/NarrativeScene';
@@ -457,7 +456,7 @@ export default function Assessment() {
       window.removeEventListener('sfa:skin-change', onSkinChange);
     };
   }, []);
-  const [showSkinSelect, setShowSkinSelect] = useState(true);
+  const [showSkinSelect, setShowSkinSelect] = useState(false);
   const [current, setCurrent] = useState(0);
   const [outgoing, setOutgoing] = useState(null);
   const [user, setUser] = useState({ firstName: '', lastName: '', email: '', gender: 'they' });
@@ -612,7 +611,7 @@ export default function Assessment() {
 
   const handleRestart = () => {
     setShowResults(false);
-    setShowSkinSelect(true);
+    window.location.href = '/';
     setCurrent(0);
     setOutgoing(null);
     setAnswers({});
@@ -851,20 +850,7 @@ export default function Assessment() {
         onForward={advance}
       />
 
-      {/* Skin selection pre-screen */}
-      {showSkinSelect && !showResults && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 20 }}>
-          <SkinSelectScene
-            activeSkinId={activeSkinId}
-            onPickSkin={(id) => {
-              setActiveSkinIdState(id);
-              setActiveSkinId(id);
-              window.dispatchEvent(new Event('sfa:skin-change'));
-            }}
-            onNext={() => setShowSkinSelect(false)}
-          />
-        </div>
-      )}
+
 
       {/* Main stage — cross-fade between outgoing and current */}
       {!showResults && !showSkinSelect && (
