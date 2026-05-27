@@ -52,6 +52,16 @@ const btnOutline = {
   borderRadius: 2,
 };
 
+const AVAILABLE_FONTS = [
+  { name: 'Inter', value: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
+  { name: 'Cormorant Garamond', value: '"Cormorant Garamond", "EB Garamond", Georgia, serif' },
+  { name: 'EB Garamond', value: '"EB Garamond", Georgia, serif' },
+  { name: 'Georgia', value: 'Georgia, serif' },
+  { name: 'Roboto', value: '"Roboto", sans-serif' },
+  { name: 'Courier New', value: '"Courier New", monospace' },
+  { name: 'Times New Roman', value: '"Times New Roman", serif' },
+];
+
 function getThemeKeys(skinId, allSkins, formTheme, isNew) {
   const baseSkin = isNew ? SKINS.force_trial : (allSkins[skinId] || SKINS.force_trial);
   const rawBase = baseSkin.theme || {};
@@ -65,8 +75,9 @@ function getThemeKeys(skinId, allSkins, formTheme, isNew) {
     .sort()
     .map(key => {
       const isColor = /(amber|brand|ink|bg|panel|color)/i.test(key) && !/(serif|sans|font|ease)/i.test(key);
+      const isFont = /(serif|sans|font)/.test(key) && !/(color|glow|ease)/i.test(key);
       const label = key.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      return { key, label: `${label} (--${key})`, type: isColor ? 'color' : 'text' };
+      return { key, label: `${label} (--${key})`, type: isFont ? 'font' : isColor ? 'color' : 'text' };
     });
 }
 
@@ -108,6 +119,10 @@ export default function SkinEditor({ skinId, allSkins, onSave, onCancel, isNew }
     Object.entries(themeForm).forEach(([k, v]) => {
       if (v) root.style.setProperty(`--${k}`, v);
     });
+    // Ensure body allows scrolling
+    if (iframe.contentDocument.body) {
+      iframe.contentDocument.body.style.overflowY = 'auto';
+    }
   }, []);
 
   useEffect(() => {
@@ -175,10 +190,19 @@ export default function SkinEditor({ skinId, allSkins, onSave, onCancel, isNew }
                 const val = form.theme[field.key] ?? '';
                 const isHex = /^#[0-9a-fA-F]{3,8}$/.test(val.trim());
                 const showPicker = field.type === 'color' && (isHex || val === '');
+                const isFont = field.type === 'font';
                 return (
                   <div key={field.key}>
                     <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 7, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 3 }}>{field.label}</label>
-                    {showPicker ? (
+                    {isFont ? (
+                      <select value={val} onChange={e => updateTheme(field.key, e.target.value)}
+                        style={{ ...inputStyle, fontSize: 11, padding: '5px 8px', cursor: 'pointer' }}>
+                        <option value="">— Select font —</option>
+                        {AVAILABLE_FONTS.map(f => (
+                          <option key={f.value} value={f.value}>{f.name}</option>
+                        ))}
+                      </select>
+                    ) : showPicker ? (
                       <div style={{ display: 'flex', gap: 6 }}>
                         <input type="color"
                           value={isHex ? val : '#000000'}
@@ -194,7 +218,7 @@ export default function SkinEditor({ skinId, allSkins, onSave, onCancel, isNew }
                       <input type="text" value={val}
                         onChange={e => updateTheme(field.key, e.target.value)}
                         style={{ ...inputStyle, fontSize: 11, padding: '5px 8px' }}
-                        placeholder={field.key.includes('serif') ? "'Georgia', serif" : field.key.includes('sans') ? "'Inter', sans-serif" : '…'}
+                        placeholder="…"
                       />
                     )}
                   </div>
@@ -215,10 +239,10 @@ export default function SkinEditor({ skinId, allSkins, onSave, onCancel, isNew }
         </div>
         <iframe
           ref={iframeRef}
-          src="/design-showcase"
+          src="/assessment?preview=true"
           onLoad={handleIframeLoad}
-          style={{ flex: 1, border: 'none', width: '100%' }}
-          title="Design Showcase Preview"
+          style={{ flex: 1, border: 'none', width: '100%', overflowY: 'auto' }}
+          title="Assessment Preview"
         />
       </div>
     </div>
