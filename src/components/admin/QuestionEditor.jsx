@@ -502,13 +502,13 @@ export default function QuestionEditor({ activeSkin, content, setContent, scorin
             {(provided, snapshot) => (
               <div ref={provided.innerRef} {...provided.droppableProps} style={{ flex: 1, overflowY: 'auto', background: snapshot.isDraggingOver ? 'rgba(255,72,29,0.04)' : 'transparent' }}>
                 {scenes.map((s, i) => {
-                  const isActive = i === selectedIdx;
+                  const isActive = s._idx === selectedIdx;
                   const isQ = s.type === 'question';
                   return (
-                    <Draggable key={i} draggableId={`scene-${i}`} index={i}>
+                    <Draggable key={s._idx} draggableId={`scene-${s._idx}`} index={i}>
                       {(provided, snapshot) => (
                         <button ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}
-                          onClick={() => setSelectedIdx(i)}
+                          onClick={() => setSelectedIdx(s._idx)}
                           style={{
                             display: 'flex', alignItems: 'center', gap: 8,
                             width: '100%', textAlign: 'left',
