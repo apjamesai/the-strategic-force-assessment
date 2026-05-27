@@ -62,6 +62,14 @@ const AVAILABLE_FONTS = [
   { name: 'Times New Roman', value: '"Times New Roman", serif' },
 ];
 
+const FONT_SIZE_CATEGORIES = [
+  { key: 'size-display', label: 'Display / Hero (h1)', defaultValue: '40px' },
+  { key: 'size-heading', label: 'Heading (h2/h3)', defaultValue: '32px' },
+  { key: 'size-body', label: 'Body text', defaultValue: '16px' },
+  { key: 'size-label', label: 'Label / Small', defaultValue: '12px' },
+  { key: 'size-eyebrow', label: 'Eyebrow / Caption', defaultValue: '11px' },
+];
+
 function getThemeKeys(skinId, allSkins, formTheme, isNew) {
   const baseSkin = isNew ? SKINS.force_trial : (allSkins[skinId] || SKINS.force_trial);
   const rawBase = baseSkin.theme || {};
@@ -100,11 +108,18 @@ function repackTheme(themeForm) {
 
 export default function SkinEditor({ skinId, allSkins, onSave, onCancel, isNew }) {
   const baseSkin = isNew ? SKINS.force_trial : (allSkins[skinId] || SKINS.force_trial);
-  const [form, setForm] = useState(() => ({
-    name: isNew ? '' : (baseSkin.name || ''),
-    tagline: isNew ? '' : (baseSkin.tagline || ''),
-    theme: stripTheme(isNew ? SKINS.force_trial.theme : baseSkin.theme),
-  }));
+  const [form, setForm] = useState(() => {
+    const baseTheme = stripTheme(isNew ? SKINS.force_trial.theme : baseSkin.theme);
+    // Pre-populate font sizes from base or defaults
+    FONT_SIZE_CATEGORIES.forEach(cat => {
+      if (!baseTheme[cat.key]) baseTheme[cat.key] = cat.defaultValue;
+    });
+    return {
+      name: isNew ? '' : (baseSkin.name || ''),
+      tagline: isNew ? '' : (baseSkin.tagline || ''),
+      theme: baseTheme,
+    };
+  });
 
   const iframeRef = useRef(null);
   const [iframeReady, setIframeReady] = useState(false);
@@ -143,7 +158,7 @@ export default function SkinEditor({ skinId, allSkins, onSave, onCancel, isNew }
     onSave({ name: form.name, tagline: form.tagline, theme: repackTheme(form.theme) });
   };
 
-  const themeFields = getThemeKeys(skinId, allSkins, form.theme, isNew);
+  const themeFields = getThemeKeys(skinId, allSkins, form.theme, isNew).filter(f => !f.key.startsWith('size-'));
 
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
@@ -180,52 +195,66 @@ export default function SkinEditor({ skinId, allSkins, onSave, onCancel, isNew }
           </div>
 
           {/* Theme variables */}
-          <div>
-            <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>
-              Theme Variables
-              <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 400, fontSize: 9, letterSpacing: '0.02em', color: C.muted, marginLeft: 8, textTransform: 'none' }}>— live preview updates instantly</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {themeFields.map(field => {
-                const val = form.theme[field.key] ?? '';
-                const isHex = /^#[0-9a-fA-F]{3,8}$/.test(val.trim());
-                const showPicker = field.type === 'color' && (isHex || val === '');
-                const isFont = field.type === 'font';
-                return (
-                  <div key={field.key}>
-                    <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 7, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 3 }}>{field.label}</label>
-                    {isFont ? (
-                      <select value={val} onChange={e => updateTheme(field.key, e.target.value)}
-                        style={{ ...inputStyle, fontSize: 11, padding: '5px 8px', cursor: 'pointer' }}>
-                        <option value="">— Select font —</option>
-                        {AVAILABLE_FONTS.map(f => (
-                          <option key={f.value} value={f.value}>{f.name}</option>
-                        ))}
-                      </select>
-                    ) : showPicker ? (
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <input type="color"
-                          value={isHex ? val : '#000000'}
-                          onChange={e => updateTheme(field.key, e.target.value)}
-                          style={{ width: 36, height: 32, border: `1px solid ${C.border}`, borderRadius: 2, cursor: 'pointer', flexShrink: 0 }}
-                        />
-                        <input type="text" value={val}
-                          onChange={e => updateTheme(field.key, e.target.value)}
-                          style={{ ...inputStyle, flex: 1, fontSize: 11, padding: '5px 8px' }} placeholder="#000000"
-                        />
-                      </div>
-                    ) : (
-                      <input type="text" value={val}
-                        onChange={e => updateTheme(field.key, e.target.value)}
-                        style={{ ...inputStyle, fontSize: 11, padding: '5px 8px' }}
-                        placeholder="…"
-                      />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+           <div>
+             <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>
+               Theme Variables
+               <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 400, fontSize: 9, letterSpacing: '0.02em', color: C.muted, marginLeft: 8, textTransform: 'none' }}>— live preview updates instantly</span>
+             </div>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+               {themeFields.map(field => {
+                 const val = form.theme[field.key] ?? '';
+                 const isHex = /^#[0-9a-fA-F]{3,8}$/.test(val.trim());
+                 const showPicker = field.type === 'color' && (isHex || val === '');
+                 const isFont = field.type === 'font';
+                 return (
+                   <div key={field.key}>
+                     <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 7, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 3 }}>{field.label}</label>
+                     {isFont ? (
+                       <select value={val} onChange={e => updateTheme(field.key, e.target.value)}
+                         style={{ ...inputStyle, fontSize: 11, padding: '5px 8px', cursor: 'pointer' }}>
+                         <option value="">— Select font —</option>
+                         {AVAILABLE_FONTS.map(f => (
+                           <option key={f.value} value={f.value}>{f.name}</option>
+                         ))}
+                       </select>
+                     ) : showPicker ? (
+                       <div style={{ display: 'flex', gap: 6 }}>
+                         <input type="color"
+                           value={isHex ? val : '#000000'}
+                           onChange={e => updateTheme(field.key, e.target.value)}
+                           style={{ width: 36, height: 32, border: `1px solid ${C.border}`, borderRadius: 2, cursor: 'pointer', flexShrink: 0 }}
+                         />
+                         <input type="text" value={val}
+                           onChange={e => updateTheme(field.key, e.target.value)}
+                           style={{ ...inputStyle, flex: 1, fontSize: 11, padding: '5px 8px' }} placeholder="#000000"
+                         />
+                       </div>
+                     ) : (
+                       <input type="text" value={val}
+                         onChange={e => updateTheme(field.key, e.target.value)}
+                         style={{ ...inputStyle, fontSize: 11, padding: '5px 8px' }}
+                         placeholder="…"
+                       />
+                     )}
+                   </div>
+                 );
+               })}
+             </div>
+           </div>
+
+           {/* Font sizes */}
+           <div>
+             <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>Font Sizes</div>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+               {FONT_SIZE_CATEGORIES.map(cat => (
+                 <div key={cat.key}>
+                   <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 7, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 3 }}>{cat.label}</label>
+                   <input type="text" value={form.theme[cat.key] ?? ''} onChange={e => updateTheme(cat.key, e.target.value)}
+                     style={{ ...inputStyle, fontSize: 11, padding: '5px 8px' }} placeholder={cat.defaultValue} />
+                 </div>
+               ))}
+             </div>
+           </div>
         </div>
       </div>
 
