@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { SKIN_LIST, getActiveSkinId, setActiveSkinId } from '@/lib/sfa/skins/index';
+import { BarChart2, Brain, AlertTriangle, Target, FlaskConical, Download } from 'lucide-react';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a15850b10cbc3f2a02765fd/f1da5dcfe_Mandarin_Logo_Horizontal_Orange_Gradient.svg';
 
@@ -13,12 +14,36 @@ const C = {
 };
 
 const DELIVERABLES = [
-  'A full score across all twelve practices',
-  'Your strategic archetype and pattern',
-  'Risk watchouts and blind-spot commentary',
-  'A personalised development focus',
-  'Four concrete next-step experiments',
-  'A downloadable profile report',
+  {
+    icon: BarChart2,
+    title: 'Full Practice Scores',
+    desc: 'A scored breakdown across all twelve leadership practices — from self-awareness to influence.',
+  },
+  {
+    icon: Brain,
+    title: 'Your Strategic Archetype',
+    desc: 'A named pattern that describes how you think, decide, and lead under real conditions.',
+  },
+  {
+    icon: AlertTriangle,
+    title: 'Risk Watchouts',
+    desc: 'Three blind-spot overlays that reveal where your strengths can become liabilities.',
+  },
+  {
+    icon: Target,
+    title: 'Development Focus',
+    desc: 'A personalised priority area — the one lever most likely to shift your leadership range.',
+  },
+  {
+    icon: FlaskConical,
+    title: 'Next-Step Experiments',
+    desc: 'Four concrete, low-cost practices to run in the next 90 days. Pick one. Run it.',
+  },
+  {
+    icon: Download,
+    title: 'Downloadable Profile',
+    desc: 'Your full result as a JSON profile — ready to reference, share, or revisit.',
+  },
 ];
 
 const STATS = [
@@ -49,6 +74,8 @@ export default function WelcomePage() {
       color: C.text,
       fontFamily: "'Roboto', sans-serif",
       cursor: 'auto',
+      overflowY: 'auto',
+      overflowX: 'hidden',
     }}>
 
       {/* Nav */}
@@ -135,26 +162,51 @@ export default function WelcomePage() {
           <p style={{
             fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700,
             fontSize: 10, letterSpacing: '0.45em', textTransform: 'uppercase',
-            color: C.orange, margin: '0 0 16px',
+            color: C.orange, margin: '0 0 8px',
           }}>
             What you'll receive
           </p>
+          <p style={{
+            fontFamily: "'Roboto', sans-serif", fontSize: 14, lineHeight: 1.65,
+            color: C.muted, maxWidth: 500, margin: '0 0 24px',
+          }}>
+            Six outputs generated from your responses — practical, specific, and immediately actionable.
+          </p>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: 0,
-            border: `1px solid ${C.border}`,
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: 12,
           }}>
-            {DELIVERABLES.map((item, i) => (
-              <div key={item} style={{
-                display: 'flex', alignItems: 'flex-start', gap: 12,
-                padding: '14px 16px',
-                borderRight: i % 3 !== 2 ? `1px solid ${C.border}` : 'none',
-                borderBottom: `1px solid ${C.border}`,
+            {DELIVERABLES.map(({ icon: Icon, title, desc }) => (
+              <div key={title} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 16,
+                padding: '20px 20px',
+                border: `1px solid ${C.border}`,
                 background: C.white,
+                borderRadius: 4,
               }}>
-                <span style={{ color: C.orange, fontWeight: 700, flexShrink: 0 }}>—</span>
-                <span style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, lineHeight: 1.5, color: C.text }}>{item}</span>
+                <div style={{
+                  width: 40, height: 40, flexShrink: 0,
+                  background: 'rgba(255,72,29,0.08)',
+                  borderRadius: 8,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Icon size={20} color={C.orange} strokeWidth={1.5} />
+                </div>
+                <div>
+                  <div style={{
+                    fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700,
+                    fontSize: 15, color: C.text, marginBottom: 4,
+                  }}>
+                    {title}
+                  </div>
+                  <div style={{
+                    fontFamily: "'Roboto', sans-serif", fontSize: 13,
+                    lineHeight: 1.6, color: C.muted,
+                  }}>
+                    {desc}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
