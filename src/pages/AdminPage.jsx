@@ -344,34 +344,52 @@ function SkinsTab({ activeSkinIdState, switchSkin }) {
 
   const allSkins = { ...SKINS, ...customSkins };
   
-  const themeFields = [
-    { key: 'bg', label: 'Background (--bg)', type: 'color', hex: '#0c0a0a' },
-    { key: 'bg-deep', label: 'Deep Background (--bg-deep)', type: 'color', hex: '#060505' },
-    { key: 'panel', label: 'Panel (--panel)', type: 'color', hex: '#1e1e23' },
-    { key: 'ink', label: 'Text (--ink)', type: 'color', hex: '#ece5d7' },
-    { key: 'ink-soft', label: 'Text Soft (--ink-soft)', type: 'color', hex: '#d6cdb9' },
-    { key: 'ink-mute', label: 'Text Mute (--ink-mute)', type: 'color', hex: '#b3a994' },
-    { key: 'ink-dim', label: 'Text Dim (--ink-dim)', type: 'color', hex: '#6b6354' },
-    { key: 'ink-label', label: 'Text Label (--ink-label)', type: 'color', hex: '#e6dfd1' },
-    { key: 'amber', label: 'Accent (--amber)', type: 'color', hex: '#ff5a2c' },
-    { key: 'amber-bright', label: 'Accent Bright (--amber-bright)', type: 'color', hex: '#ff8a4a' },
-    { key: 'amber-deep', label: 'Accent Deep (--amber-deep)', type: 'color', hex: '#c93a16' },
-    { key: 'brand-orange', label: 'Brand Orange (--brand-orange)', type: 'color', hex: '#ff481d' },
-    { key: 'brand-tangerine', label: 'Brand Tangerine (--brand-tangerine)', type: 'color', hex: '#ff6b00' },
-    { key: 'brand-yellow', label: 'Brand Yellow (--brand-yellow)', type: 'color', hex: '#feab2b' },
-    { key: 'brand-silver', label: 'Brand Silver (--brand-silver)', type: 'color', hex: '#dbdbdb' },
-    { key: 'serif', label: 'Serif Font (--serif)', type: 'text' },
-    { key: 'sans', label: 'Sans Font (--sans)', type: 'text' },
-  ];
+  // Extract all CSS custom property keys from the skin being edited.
+  // We use the current editForm.theme (already stripped of '--' prefixes) as source of truth.
+  // Falls back to the skin being edited or force_trial for initial population.
+  const getAllThemeKeys = () => {
+    const formTheme = editForm.theme || {};
+    // Seed from base skin if form is empty
+    const baseTheme = editingSkinId ? (allSkins[editingSkinId]?.theme || {}) : (SKINS.force_trial.theme || {});
+    const strippedBase = {};
+    Object.entries(baseTheme).forEach(([k, v]) => {
+      strippedBase[k.startsWith('--') ? k.slice(2) : k] = v;
+    });
+    const merged = { ...strippedBase, ...formTheme };
+
+    return Object.keys(merged)
+      .filter(key => !key.includes('Import') && !key.includes('fontImport'))
+      .sort()
+      .map(key => {
+        const isColor = /(amber|brand|ink|bg|panel|color)/i.test(key) && !/(serif|sans|font|ease)/i.test(key);
+        const label = key.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        return { key, label: `${label} (--${key})`, type: isColor ? 'color' : 'text' };
+      });
+  };
 
   const startEdit = (skinId) => {
     const skin = allSkins[skinId];
+    // Strip the '--' prefix from theme keys for the editor form, since they're stored with '--' but edited without
+    const rawTheme = skin.theme || {};
+    const strippedTheme = {};
+    Object.entries(rawTheme).forEach(([k, v]) => {
+      strippedTheme[k.startsWith('--') ? k.slice(2) : k] = v;
+    });
     setEditForm({ 
       name: skin.name, 
       tagline: skin.tagline,
-      theme: skin.theme || {}
+      theme: strippedTheme
     });
     setEditingSkinId(skinId);
+  };
+
+  const repackTheme = (themeForm) => {
+    const out = {};
+    Object.entries(themeForm).forEach(([k, v]) => {
+      if (v === '' || v === undefined) return;
+      out[k.startsWith('--') ? k : `--${k}`] = v;
+    });
+    return out;
   };
 
   const saveEdit = () => {
@@ -382,7 +400,7 @@ function SkinsTab({ activeSkinIdState, switchSkin }) {
         ...allSkins[editingSkinId], 
         name: editForm.name,
         tagline: editForm.tagline,
-        theme: editForm.theme 
+        theme: repackTheme(editForm.theme) 
       } 
     };
     setCustomSkins(updated);
@@ -398,7 +416,15 @@ function SkinsTab({ activeSkinIdState, switchSkin }) {
       name: editForm.name,
       tagline: editForm.tagline,
       scenes: SKINS.force_trial.scenes,
-      theme: editForm.theme || { ...SKINS.force_trial.theme },
+      archetypes: SKINS.force_trial.archetypes,
+      secondaryPatterns: SKINS.force_trial.secondaryPatterns,
+      riskCopy: SKINS.force_trial.riskCopy,
+      nextSteps: SKINS.force_trial.nextSteps,
+      imageMap: {},
+      bodyClasses: [],
+      theme: Object.keys(editForm.theme || {}).length > 0
+        ? repackTheme(editForm.theme)
+        : { ...SKINS.force_trial.theme },
     };
     const updated = { ...customSkins, [newId]: newSkin };
     setCustomSkins(updated);
@@ -444,36 +470,32 @@ function SkinsTab({ activeSkinIdState, switchSkin }) {
             <div style={{ marginBottom: 24 }}>
               <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>Theme Variables</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-                {themeFields.map(field => (
-                  <div key={field.key}>
-                    <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 8, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 4 }}>{field.label}</label>
-                    {field.type === 'color' ? (
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <input 
-                          type="color" 
-                          value={editForm.theme[field.key] || ''} 
-                          onChange={e => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: e.target.value } })}
-                          style={{ width: 40, height: 36, border: `1px solid ${C.border}`, borderRadius: 2, cursor: 'pointer' }}
+                {getAllThemeKeys().map(field => {
+                  const val = editForm.theme[field.key] ?? '';
+                  const isHex = /^#[0-9a-fA-F]{3,6}$/.test(val.trim());
+                  const showPicker = field.type === 'color' && (isHex || val === '');
+                  const updateTheme = (v) => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: v } });
+                  return (
+                    <div key={field.key}>
+                      <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 8, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 4 }}>{field.label}</label>
+                      {showPicker ? (
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <input type="color" value={isHex ? val : '#000000'} onChange={e => updateTheme(e.target.value)}
+                            style={{ width: 40, height: 36, border: `1px solid ${C.border}`, borderRadius: 2, cursor: 'pointer', flexShrink: 0 }}
+                          />
+                          <input type="text" value={val} onChange={e => updateTheme(e.target.value)}
+                            style={{ ...inputStyle, flex: 1, fontSize: 11 }} placeholder="#000000"
+                          />
+                        </div>
+                      ) : (
+                        <input type="text" value={val} onChange={e => updateTheme(e.target.value)}
+                          style={{ ...inputStyle, fontSize: 11 }}
+                          placeholder={field.key.includes('serif') ? "'Georgia', serif" : field.key.includes('sans') ? "'Inter', sans-serif" : '…'}
                         />
-                        <input 
-                          type="text" 
-                          value={editForm.theme[field.key] || ''} 
-                          onChange={e => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: e.target.value } })}
-                          style={{ ...inputStyle, flex: 1, fontSize: 11 }}
-                          placeholder="#000000"
-                        />
-                      </div>
-                    ) : (
-                      <input 
-                        type="text" 
-                        value={editForm.theme[field.key] || ''} 
-                        onChange={e => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: e.target.value } })}
-                        style={inputStyle}
-                        placeholder={field.key === 'serif' ? "'Georgia', serif" : "'Inter', sans-serif"}
-                      />
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -510,36 +532,32 @@ function SkinsTab({ activeSkinIdState, switchSkin }) {
             <div style={{ marginBottom: 24 }}>
               <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>Theme Variables</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-                {themeFields.map(field => (
-                  <div key={field.key}>
-                    <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 8, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 4 }}>{field.label}</label>
-                    {field.type === 'color' ? (
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <input 
-                          type="color" 
-                          value={editForm.theme[field.key] || '#000000'} 
-                          onChange={e => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: e.target.value } })}
-                          style={{ width: 40, height: 36, border: `1px solid ${C.border}`, borderRadius: 2, cursor: 'pointer' }}
+                {getAllThemeKeys().map(field => {
+                  const val = editForm.theme[field.key] ?? '';
+                  const isHex = /^#[0-9a-fA-F]{3,6}$/.test(val.trim());
+                  const showPicker = field.type === 'color' && (isHex || val === '');
+                  const updateTheme = (v) => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: v } });
+                  return (
+                    <div key={field.key}>
+                      <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 8, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 4 }}>{field.label}</label>
+                      {showPicker ? (
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <input type="color" value={isHex ? val : '#000000'} onChange={e => updateTheme(e.target.value)}
+                            style={{ width: 40, height: 36, border: `1px solid ${C.border}`, borderRadius: 2, cursor: 'pointer', flexShrink: 0 }}
+                          />
+                          <input type="text" value={val} onChange={e => updateTheme(e.target.value)}
+                            style={{ ...inputStyle, flex: 1, fontSize: 11 }} placeholder="#000000"
+                          />
+                        </div>
+                      ) : (
+                        <input type="text" value={val} onChange={e => updateTheme(e.target.value)}
+                          style={{ ...inputStyle, fontSize: 11 }}
+                          placeholder={field.key.includes('serif') ? "'Georgia', serif" : field.key.includes('sans') ? "'Inter', sans-serif" : '…'}
                         />
-                        <input 
-                          type="text" 
-                          value={editForm.theme[field.key] || ''} 
-                          onChange={e => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: e.target.value } })}
-                          style={{ ...inputStyle, flex: 1, fontSize: 11 }}
-                          placeholder="#000000"
-                        />
-                      </div>
-                    ) : (
-                      <input 
-                        type="text" 
-                        value={editForm.theme[field.key] || ''} 
-                        onChange={e => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: e.target.value } })}
-                        style={inputStyle}
-                        placeholder={field.key === 'serif' ? "'Georgia', serif" : "'Inter', sans-serif"}
-                      />
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -588,7 +606,15 @@ function SkinsTab({ activeSkinIdState, switchSkin }) {
       </div>
 
       <div style={{ display: 'flex', gap: 12 }}>
-        <button onClick={() => setShowNewForm(true)} style={btnOrange}>+ New Skin</button>
+        <button onClick={() => {
+          // Pre-seed with force_trial theme (stripped of '--') so all fields are populated
+          const baseTheme = {};
+          Object.entries(SKINS.force_trial.theme || {}).forEach(([k, v]) => {
+            baseTheme[k.startsWith('--') ? k.slice(2) : k] = v;
+          });
+          setEditForm({ name: '', tagline: '', theme: baseTheme });
+          setShowNewForm(true);
+        }} style={btnOrange}>+ New Skin</button>
         <a href="/admin/image-studio"
           style={{ display: 'inline-flex', alignItems: 'center', gap: 10, ...btnOutline, textDecoration: 'none' }}>
           Image Studio →
