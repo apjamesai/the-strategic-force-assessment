@@ -1,48 +1,37 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  ARCHETYPES, SECONDARY_PATTERNS, MOCK_PROFILES,
-  RULE_DEFAULTS, FRAMEWORK
+  ARCHETYPES, SECONDARY_PATTERNS,
+  RULE_DEFAULTS,
 } from '@/lib/sfa/engine';
 import { SKINS, SKIN_LIST, getActiveSkinId, setActiveSkinId } from '@/lib/sfa/skins/index';
 
-/* Brand tokens */
+const LOGO_URL = 'https://media.base44.com/images/public/6a15850b10cbc3f2a02765fd/f1da5dcfe_Mandarin_Logo_Horizontal_Orange_Gradient.svg';
+
 const C = {
   orange: '#FF481D',
   black: '#1E1E23',
-  blackDeep: '#0f0f12',
   white: '#FFFFFF',
-  silver: '#DBDBDB',
-  lightSilver: '#EEEEEE',
-  muted: 'rgba(219,219,219,0.5)',
-  border: 'rgba(255,255,255,0.08)',
+  lightBg: '#F7F7F7',
+  border: '#E8E8E8',
+  text: '#1E1E23',
+  muted: '#6B6B6B',
+  inputBg: '#FAFAFA',
 };
 
-/* Shared styles */
 const inputStyle = {
-  background: 'rgba(0,0,0,0.5)',
+  background: C.inputBg,
   border: `1px solid ${C.border}`,
-  color: C.white,
+  color: C.text,
   padding: '8px 12px',
   fontSize: 13,
   fontFamily: "'Roboto', sans-serif",
   outline: 'none',
   width: '100%',
   boxSizing: 'border-box',
-  borderRadius: 0,
+  borderRadius: 2,
+  transition: 'border-color 0.15s',
 };
-const btnGhost = {
-  background: 'transparent',
-  border: `1px solid ${C.border}`,
-  color: C.silver,
-  fontFamily: "'Roboto Condensed', sans-serif",
-  fontWeight: 600,
-  fontSize: 11,
-  letterSpacing: '0.3em',
-  textTransform: 'uppercase',
-  padding: '8px 14px',
-  cursor: 'pointer',
-  transition: 'all 0.2s',
-};
+
 const btnOrange = {
   background: C.orange,
   border: 'none',
@@ -54,7 +43,23 @@ const btnOrange = {
   textTransform: 'uppercase',
   padding: '9px 20px',
   cursor: 'pointer',
-  transition: 'background 0.2s',
+  borderRadius: 2,
+  transition: 'background 0.15s',
+};
+
+const btnOutline = {
+  background: C.white,
+  border: `1px solid ${C.border}`,
+  color: C.muted,
+  fontFamily: "'Roboto Condensed', sans-serif",
+  fontWeight: 600,
+  fontSize: 10,
+  letterSpacing: '0.3em',
+  textTransform: 'uppercase',
+  padding: '7px 14px',
+  cursor: 'pointer',
+  borderRadius: 2,
+  transition: 'all 0.15s',
 };
 
 const ADMIN_SECONDARY_BASE_DEFAULT = 'hidden_drifter';
@@ -64,13 +69,13 @@ const TABS = [
   { key: 'scoring',    label: 'Scoring'    },
   { key: 'rules',      label: 'Rules'      },
   { key: 'skins',      label: 'Skins'      },
-  { key: 'results',    label: 'Results'    }
+  { key: 'results',    label: 'Results'    },
 ];
 
 const LS = {
   rules:   'mandarin.assessment.rules',
   content: 'mandarin.assessment.content',
-  scoring: 'mandarin.assessment.scoring'
+  scoring: 'mandarin.assessment.scoring',
 };
 function lsGet(key, fallback) {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
@@ -80,46 +85,36 @@ function lsSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 }
 
-/* Mandarin M logomark */
-function MandarinMark({ size = 28, color = C.orange }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
-      <path d="M10 88 L10 32 L32 54 L50 18 L68 54 L90 32 L90 88 Z" fill={color} />
-    </svg>
-  );
-}
-
-/* Section heading */
 function SectionHead({ title, sub }) {
   return (
-    <div style={{ marginBottom: 32, paddingBottom: 20, borderBottom: `1px solid ${C.border}` }}>
-      <h2 style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 28, color: C.white, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '-0.01em' }}>{title}</h2>
-      {sub && <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, color: C.silver, margin: 0, lineHeight: 1.55 }}>{sub}</p>}
+    <div style={{ marginBottom: 28, paddingBottom: 16, borderBottom: `2px solid ${C.orange}`, display: 'inline-block', width: '100%' }}>
+      <h2 style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 24, color: C.text, margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '-0.01em' }}>{title}</h2>
+      {sub && <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.muted, margin: 0, lineHeight: 1.55 }}>{sub}</p>}
     </div>
   );
 }
 
-/* Label */
 function Label({ children }) {
-  return <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>{children}</div>;
+  return <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>{children}</div>;
 }
 
 export default function AdminPage() {
-  const [tab, setTab]                 = useState('archetypes');
+  const [tab, setTab] = useState('archetypes');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [secondaryBase, setSecondaryBase] = useState(ADMIN_SECONDARY_BASE_DEFAULT);
   const [activeSkinIdState, setActiveSkinIdStateLocal] = useState(getActiveSkinId());
-  const [rules, setRules]             = useState(() => lsGet(LS.rules, { ...RULE_DEFAULTS }));
-  const [content, setContent]         = useState(() => lsGet(LS.content, {}));
-  const [scoring, setScoring]         = useState(() => lsGet(LS.scoring, {}));
+  const [rules, setRules]   = useState(() => lsGet(LS.rules, { ...RULE_DEFAULTS }));
+  const [content, setContent] = useState(() => lsGet(LS.content, {}));
+  const [scoring, setScoring] = useState(() => lsGet(LS.scoring, {}));
 
   const activeSkin = SKINS[activeSkinIdState] || SKINS.force_trial;
 
-  useEffect(() => { lsSet(LS.rules, rules); },   [rules]);
+  useEffect(() => { lsSet(LS.rules, rules); }, [rules]);
   useEffect(() => { lsSet(LS.content, content); }, [content]);
   useEffect(() => { lsSet(LS.scoring, scoring); }, [scoring]);
 
   const handlePreview = (primary, secondary) => {
-    alert(`Preview wired: ${primary}${secondary ? ' + ' + secondary : ''}. Navigate to "/" to see the result.`);
+    alert(`Preview: ${primary}${secondary ? ' + ' + secondary : ''}. Navigate to "/" to see the result.`);
   };
 
   const switchSkin = (id) => {
@@ -128,56 +123,81 @@ export default function AdminPage() {
     window.dispatchEvent(new Event('sfa:skin-change'));
   };
 
-  return (
-    <div style={{ background: C.blackDeep, minHeight: '100vh', color: C.white, fontFamily: "'Roboto', sans-serif", cursor: 'auto' }}>
+  const setTabAndClose = (key) => {
+    setTab(key);
+    setMobileNavOpen(false);
+  };
 
-      {/* Top bar */}
+  return (
+    <div style={{ background: C.lightBg, minHeight: '100vh', color: C.text, fontFamily: "'Roboto', sans-serif", cursor: 'auto' }}>
+
+      {/* ── Top bar ── */}
       <div style={{
-        background: C.black, borderBottom: `3px solid ${C.orange}`,
-        padding: '0 32px', height: 64,
+        background: C.white,
+        borderBottom: `1px solid ${C.border}`,
+        padding: '0 clamp(16px, 3vw, 32px)',
+        height: 64,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         position: 'sticky', top: 0, zIndex: 100,
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <MandarinMark size={26} color={C.orange} />
-          <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 18, color: C.white, letterSpacing: '0.04em' }}>mandarin</span>
-          <span style={{ color: C.muted, margin: '0 8px', fontSize: 18 }}>|</span>
-          <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 12, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.silver }}>Admin Panel</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <img src={LOGO_URL} alt="Mandarin" style={{ height: 30 }} />
+          <span style={{ color: C.border, fontSize: 20, fontWeight: 200 }}>|</span>
+          <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 12, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted }}>
+            Admin
+          </span>
         </div>
-        <a href="/"
-          style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 10, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.silver, textDecoration: 'none', padding: '8px 16px', border: `1px solid ${C.border}`, transition: 'all 0.2s' }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = C.orange; e.currentTarget.style.color = C.orange; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.silver; }}
-        >
-          ← Back to Assessment
-        </a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Mobile nav toggle */}
+          <button
+            onClick={() => setMobileNavOpen(v => !v)}
+            style={{ ...btnOutline, display: 'none' }}
+            className="admin-mobile-toggle"
+          >
+            ☰ Menu
+          </button>
+          <a href="/"
+            style={{
+              fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10,
+              letterSpacing: '0.35em', textTransform: 'uppercase', color: C.orange,
+              textDecoration: 'none', padding: '8px 16px',
+              border: `1px solid ${C.orange}`, borderRadius: 2, transition: 'all 0.15s',
+            }}
+          >
+            ← Assessment
+          </a>
+        </div>
       </div>
 
       <div style={{ display: 'flex', minHeight: 'calc(100vh - 64px)' }}>
 
-        {/* Sidebar nav */}
-        <div style={{
+        {/* ── Sidebar ── */}
+        <aside style={{
           width: 200, flexShrink: 0,
-          background: C.black,
+          background: C.white,
           borderRight: `1px solid ${C.border}`,
-          paddingTop: 32,
+          paddingTop: 24,
           position: 'sticky', top: 64, height: 'calc(100vh - 64px)', overflowY: 'auto',
         }}>
+          <div style={{ padding: '0 16px 12px', fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.muted }}>
+            Navigation
+          </div>
           {TABS.map(t => (
             <button key={t.key}
-              onClick={() => setTab(t.key)}
+              onClick={() => setTabAndClose(t.key)}
               style={{
                 display: 'block', width: '100%', textAlign: 'left',
-                padding: '14px 24px',
-                background: tab === t.key ? `rgba(255,72,29,0.12)` : 'transparent',
+                padding: '12px 20px',
+                background: tab === t.key ? 'rgba(255,72,29,0.07)' : 'transparent',
                 borderLeft: `3px solid ${tab === t.key ? C.orange : 'transparent'}`,
                 border: 'none',
                 borderLeft: `3px solid ${tab === t.key ? C.orange : 'transparent'}`,
-                color: tab === t.key ? C.white : C.silver,
+                color: tab === t.key ? C.orange : C.text,
                 fontFamily: "'Roboto Condensed', sans-serif",
                 fontWeight: tab === t.key ? 700 : 400,
                 fontSize: 13,
-                letterSpacing: '0.15em',
+                letterSpacing: '0.1em',
                 textTransform: 'uppercase',
                 cursor: 'pointer',
                 transition: 'all 0.15s',
@@ -186,80 +206,88 @@ export default function AdminPage() {
               {t.label}
             </button>
           ))}
-        </div>
+        </aside>
 
-        {/* Main content area */}
-        <div style={{ flex: 1, padding: '40px 48px', overflowY: 'auto', maxWidth: 1200 }}>
+        {/* ── Content ── */}
+        <main style={{ flex: 1, padding: 'clamp(24px, 4vw, 40px) clamp(20px, 4vw, 48px)', overflowY: 'auto', minWidth: 0 }}>
           {tab === 'archetypes' && <ArchetypesTab onPreview={handlePreview} secondaryBase={secondaryBase} setSecondaryBase={setSecondaryBase} />}
           {tab === 'content'    && <ContentTab activeSkin={activeSkin} content={content} setContent={setContent} />}
           {tab === 'scoring'    && <ScoringTab activeSkin={activeSkin} scoring={scoring} setScoring={setScoring} />}
           {tab === 'rules'      && <RulesTab rules={rules} setRules={setRules} />}
           {tab === 'skins'      && <SkinsTab activeSkinIdState={activeSkinIdState} switchSkin={switchSkin} />}
           {tab === 'results'    && <ResultsTab />}
-        </div>
+        </main>
       </div>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .admin-mobile-toggle { display: inline-flex !important; }
+        }
+      `}</style>
     </div>
   );
 }
 
-/* ── Archetypes tab ──────────────────────────────────────────── */
+/* ── Archetypes ── */
 function ArchetypesTab({ onPreview, secondaryBase, setSecondaryBase }) {
   return (
     <div>
-      <SectionHead title="Archetypes" sub="Five score-band archetypes plus six secondary pattern overlays." />
+      <SectionHead title="Archetypes" sub="Five score-band archetypes plus six secondary pattern overlays. Click any card to preview that result." />
 
-      <Label>Primary · band-based</Label>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 1, background: C.border, marginBottom: 32 }}>
+      <Label>Primary · Band-based</Label>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12, marginBottom: 36 }}>
         {Object.entries(ARCHETYPES).map(([key, a]) => (
-          <div key={key}
-            onClick={() => onPreview(key, null)}
-            style={{ background: C.black, padding: '22px 20px', cursor: 'pointer', borderLeft: `3px solid transparent`, transition: 'all 0.2s' }}
-            onMouseEnter={e => { e.currentTarget.style.borderLeftColor = C.orange; e.currentTarget.style.background = `rgba(255,72,29,0.06)`; }}
-            onMouseLeave={e => { e.currentTarget.style.borderLeftColor = 'transparent'; e.currentTarget.style.background = C.black; }}
-          >
-            <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 8 }}>{a.band}</div>
-            <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 18, color: C.white, marginBottom: 6 }}>{a.name}</div>
-            <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.silver, lineHeight: 1.5, marginBottom: 12 }}>{a.headline}</div>
-            <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 10, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted }}>Preview result →</div>
-          </div>
+          <ArchCard key={key} tag={a.band} name={a.name} desc={a.headline} cta="Preview result →" onClick={() => onPreview(key, null)} />
         ))}
       </div>
 
-      <Label>Secondary patterns — choose base archetype first</Label>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+      <Label>Secondary · Choose base archetype first</Label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
         {Object.entries(ARCHETYPES).map(([key, a]) => (
-          <button key={key}
-            onClick={() => setSecondaryBase(key)}
+          <button key={key} onClick={() => setSecondaryBase(key)}
             style={{
-              ...btnGhost,
-              borderColor: secondaryBase === key ? C.orange : C.border,
-              color: secondaryBase === key ? C.orange : C.silver,
-              background: secondaryBase === key ? 'rgba(255,72,29,0.08)' : 'transparent',
+              fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 11,
+              letterSpacing: '0.2em', textTransform: 'uppercase',
+              padding: '7px 14px', cursor: 'pointer', borderRadius: 2, transition: 'all 0.15s',
+              background: secondaryBase === key ? C.orange : C.white,
+              border: `1px solid ${secondaryBase === key ? C.orange : C.border}`,
+              color: secondaryBase === key ? C.white : C.text,
             }}
           >{a.name}</button>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 1, background: C.border }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
         {Object.entries(SECONDARY_PATTERNS).map(([key, p]) => (
-          <div key={key}
-            onClick={() => onPreview(secondaryBase, key)}
-            style={{ background: C.black, padding: '22px 20px', cursor: 'pointer', borderLeft: `3px solid transparent`, transition: 'all 0.2s' }}
-            onMouseEnter={e => { e.currentTarget.style.borderLeftColor = C.orange; e.currentTarget.style.background = `rgba(255,72,29,0.06)`; }}
-            onMouseLeave={e => { e.currentTarget.style.borderLeftColor = 'transparent'; e.currentTarget.style.background = C.black; }}
-          >
-            <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.muted, marginBottom: 8 }}>Secondary overlay</div>
-            <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 18, color: C.white, marginBottom: 6 }}>{p.name}</div>
-            <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.silver, lineHeight: 1.5, marginBottom: 12 }}>{p.headline}</div>
-            <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 10, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted }}>Preview on chosen primary →</div>
-          </div>
+          <ArchCard key={key} tag="Secondary overlay" name={p.name} desc={p.headline} cta="Preview on chosen primary →" onClick={() => onPreview(secondaryBase, key)} />
         ))}
       </div>
     </div>
   );
 }
 
-/* ── Content tab ─────────────────────────────────────────────── */
+function ArchCard({ tag, name, desc, cta, onClick }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div onClick={onClick}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        background: hov ? 'rgba(255,72,29,0.04)' : C.white,
+        border: `1px solid ${hov ? C.orange : C.border}`,
+        borderTop: `3px solid ${hov ? C.orange : C.border}`,
+        padding: '18px 16px', cursor: 'pointer', borderRadius: 2, transition: 'all 0.15s',
+        display: 'flex', flexDirection: 'column', gap: 8,
+      }}
+    >
+      <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange }}>{tag}</div>
+      <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 16, color: C.text }}>{name}</div>
+      <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: C.muted, lineHeight: 1.5, flex: 1 }}>{desc}</div>
+      <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 10, letterSpacing: '0.25em', textTransform: 'uppercase', color: hov ? C.orange : C.muted, marginTop: 4 }}>{cta}</div>
+    </div>
+  );
+}
+
+/* ── Content ── */
 function ContentTab({ activeSkin, content, setContent }) {
   const skinId = activeSkin.id;
   const overrides = content[skinId] || {};
@@ -287,25 +315,25 @@ function ContentTab({ activeSkin, content, setContent }) {
   return (
     <div>
       <SectionHead title="Content" sub={`Override scene copy for ${activeSkin.name}. Edits are saved per-skin in this browser.`} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {editableScenes.map(({ s, i }) => {
           const o = overrides[i] || {};
           return (
-            <div key={i} style={{ border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.02)' }}>
-              <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 10, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.orange }}>
+            <div key={i} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 2 }}>
+              <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, background: C.lightBg, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.orange }}>
                   {i + 1}. {s.type}{s.locationLabel ? ` · ${s.locationLabel}` : ''}
                 </span>
-                {overrides[i] && <button onClick={() => clearScene(i)} style={btnGhost}>Reset</button>}
+                {overrides[i] && <button onClick={() => clearScene(i)} style={btnOutline}>Reset</button>}
               </div>
               <div style={{ padding: 16 }}>
-                {Array.isArray(s.title) && <Field label="Title (space-separated words)" value={o.title ?? s.title.join(' ')} onChange={v => updateScene(i, 'title', v)} />}
+                {Array.isArray(s.title) && <Field label="Title" value={o.title ?? s.title.join(' ')} onChange={v => updateScene(i, 'title', v)} />}
                 {typeof s.title === 'string' && <Field label="Title" value={o.title ?? s.title} onChange={v => updateScene(i, 'title', v)} />}
                 {s.sub  && <Field label="Sub"  value={o.sub  ?? s.sub}  onChange={v => updateScene(i, 'sub',  v)} />}
                 {s.note && <Field label="Note" value={o.note ?? s.note} onChange={v => updateScene(i, 'note', v)} multiline />}
                 {s.eyebrow && <Field label="Eyebrow" value={o.eyebrow ?? s.eyebrow} onChange={v => updateScene(i, 'eyebrow', v)} />}
-                {Array.isArray(s.body) && <Field label="Body (lines, separated by ¶)" value={o.body ?? s.body.join(' ¶ ')} onChange={v => updateScene(i, 'body', v)} multiline />}
-                {Array.isArray(s.paragraphs) && <Field label="Paragraphs (separated by ¶)" value={o.paragraphs ?? s.paragraphs.join(' ¶ ')} onChange={v => updateScene(i, 'paragraphs', v)} multiline />}
+                {Array.isArray(s.body) && <Field label="Body (lines, ¶ separated)" value={o.body ?? s.body.join(' ¶ ')} onChange={v => updateScene(i, 'body', v)} multiline />}
+                {Array.isArray(s.paragraphs) && <Field label="Paragraphs (¶ separated)" value={o.paragraphs ?? s.paragraphs.join(' ¶ ')} onChange={v => updateScene(i, 'paragraphs', v)} multiline />}
               </div>
             </div>
           );
@@ -315,7 +343,7 @@ function ContentTab({ activeSkin, content, setContent }) {
   );
 }
 
-/* ── Scoring tab ─────────────────────────────────────────────── */
+/* ── Scoring ── */
 function ScoringTab({ activeSkin, scoring, setScoring }) {
   const skinId = activeSkin.id;
   const overrides = scoring[skinId] || {};
@@ -323,15 +351,15 @@ function ScoringTab({ activeSkin, scoring, setScoring }) {
 
   return (
     <div>
-      <SectionHead title="Scoring" sub={`Adjust per-option score values for each question in ${activeSkin.name}.`} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <SectionHead title="Scoring" sub={`Adjust per-option score values for ${activeSkin.name}.`} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {questions.map(({ s, i }) => (
-          <div key={i} style={{ border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.02)' }}>
-            <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.border}` }}>
-              <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 10, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.orange }}>
+          <div key={i} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 2 }}>
+            <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, background: C.lightBg }}>
+              <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.orange }}>
                 Q{i + 1} · {s.qType || 'choice'} · {s.practice || s.risk || ''}
-              </span>
-              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.silver, fontStyle: 'italic', marginTop: 6 }}>{s.prompt || s.scaleHigh || ''}</div>
+              </div>
+              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.muted, marginTop: 4 }}>{s.prompt || s.scaleHigh || ''}</div>
             </div>
             <div style={{ padding: 16 }}>
               {Array.isArray(s.options) && s.options.map((opt, oi) => {
@@ -339,27 +367,24 @@ function ScoringTab({ activeSkin, scoring, setScoring }) {
                 const overrideKey = `${i}.${oi}`;
                 const value = overrides[overrideKey] ?? baseScore;
                 return (
-                  <div key={oi} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, marginBottom: 8 }}>
-                    <div style={{ color: C.muted, fontSize: 13, paddingTop: 8 }}>{opt.label || opt.text || (typeof opt === 'string' ? opt : JSON.stringify(opt))}</div>
+                  <div key={oi} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, marginBottom: 8, alignItems: 'center' }}>
+                    <div style={{ color: C.muted, fontSize: 13 }}>{opt.label || opt.text || (typeof opt === 'string' ? opt : JSON.stringify(opt))}</div>
                     <input type="text" value={value}
                       onChange={e => setScoring(prev => ({ ...prev, [skinId]: { ...(prev[skinId] || {}), [overrideKey]: e.target.value } }))}
                       style={inputStyle} />
                   </div>
                 );
               })}
-              {Array.isArray(s.scaleScores) && (
-                <div style={{ color: C.muted, fontSize: 12, fontFamily: "'Roboto', sans-serif" }}>Scale scoring: {JSON.stringify(s.scaleScores)}</div>
-              )}
             </div>
           </div>
         ))}
-        {questions.length === 0 && <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.muted, fontStyle: 'italic' }}>No question scenes in this skin.</div>}
+        {questions.length === 0 && <p style={{ color: C.muted, fontStyle: 'italic', fontSize: 13 }}>No question scenes in this skin.</p>}
       </div>
     </div>
   );
 }
 
-/* ── Rules tab ───────────────────────────────────────────────── */
+/* ── Rules ── */
 function RulesTab({ rules, setRules }) {
   const sections = useMemo(() => {
     const out = { 'Force Multiplier': [], 'Archetype bands': [], 'Practice bands': [], 'Risk bands': [], 'Secondary pattern triggers': [] };
@@ -376,18 +401,18 @@ function RulesTab({ rules, setRules }) {
 
   return (
     <div>
-      <SectionHead title="Rules" sub="Tune the score thresholds that drive archetype selection, band labelling, and secondary-pattern triggering." />
-      <button onClick={() => setRules({ ...RULE_DEFAULTS })} style={btnGhost}>Reset to defaults</button>
+      <SectionHead title="Rules" sub="Tune score thresholds that drive archetype selection, band labelling, and secondary-pattern triggering." />
+      <button onClick={() => setRules({ ...RULE_DEFAULTS })} style={btnOutline}>Reset to defaults</button>
       {Object.entries(sections).map(([title, entries]) => entries.length > 0 && (
-        <div key={title} style={{ marginTop: 32 }}>
+        <div key={title} style={{ marginTop: 28 }}>
           <Label>{title}</Label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 10 }}>
             {entries.map(([k, v]) => (
-              <div key={k} style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: 10, alignItems: 'center' }}>
-                <label style={{ color: C.silver, fontSize: 12, fontFamily: "'Roboto', sans-serif" }}>{k}</label>
+              <div key={k} style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: 10, alignItems: 'center', background: C.white, padding: '8px 12px', border: `1px solid ${C.border}`, borderRadius: 2 }}>
+                <label style={{ color: C.text, fontSize: 12, fontFamily: "'Roboto', sans-serif" }}>{k}</label>
                 <input type="number" value={v}
                   onChange={e => setRules(prev => ({ ...prev, [k]: Number(e.target.value) }))}
-                  style={inputStyle} />
+                  style={{ ...inputStyle, textAlign: 'center' }} />
               </div>
             ))}
           </div>
@@ -397,24 +422,25 @@ function RulesTab({ rules, setRules }) {
   );
 }
 
-/* ── Skins tab ───────────────────────────────────────────────── */
+/* ── Skins ── */
 function SkinsTab({ activeSkinIdState, switchSkin }) {
   return (
     <div>
-      <SectionHead title="Skins" sub="Skins wrap the same 12-practice assessment in different narrative universes." />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 1, background: C.border, marginBottom: 32 }}>
+      <SectionHead title="Skins" sub="Each skin wraps the same 12-practice assessment in a different narrative universe." />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16, marginBottom: 32 }}>
         {SKIN_LIST.map(skin => {
           const isActive = skin.id === activeSkinIdState;
           return (
             <div key={skin.id} style={{
-              background: isActive ? 'rgba(255,72,29,0.1)' : C.black,
-              padding: '24px 20px',
-              borderLeft: `4px solid ${isActive ? C.orange : 'transparent'}`,
+              background: C.white,
+              border: `1px solid ${isActive ? C.orange : C.border}`,
+              borderTop: `3px solid ${isActive ? C.orange : C.border}`,
+              padding: '20px 18px', borderRadius: 2,
               display: 'flex', flexDirection: 'column', gap: 10,
             }}>
-              {isActive && <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange }}>Active</div>}
-              <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 18, color: C.white }}>{skin.name}</div>
-              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.silver, lineHeight: 1.5, flex: 1 }}>{skin.tagline}</div>
+              {isActive && <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange }}>Active</div>}
+              <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 17, color: C.text }}>{skin.name}</div>
+              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.muted, lineHeight: 1.5, flex: 1 }}>{skin.tagline}</div>
               {!isActive && (
                 <button style={btnOrange} onClick={() => switchSkin(skin.id)}
                   onMouseEnter={e => e.currentTarget.style.background = '#e03d18'}
@@ -426,32 +452,32 @@ function SkinsTab({ activeSkinIdState, switchSkin }) {
         })}
       </div>
       <a href="/admin/image-studio"
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '12px 20px', background: C.orange, color: C.white, fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', textDecoration: 'none' }}>
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 10, ...btnOrange, textDecoration: 'none' }}>
         Open Image Studio →
       </a>
     </div>
   );
 }
 
-/* ── Results tab ─────────────────────────────────────────────── */
+/* ── Results ── */
 function ResultsTab() {
   return (
     <div>
       <SectionHead title="Results" sub="Session results are saved locally in your browser." />
-      <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, color: C.muted, fontStyle: 'italic', paddingTop: 16 }}>No completed sessions in this browser yet.</div>
+      <p style={{ color: C.muted, fontStyle: 'italic', fontSize: 13 }}>No completed sessions in this browser yet.</p>
     </div>
   );
 }
 
-/* ── Field helper ────────────────────────────────────────────── */
+/* ── Field ── */
 function Field({ label, value, onChange, multiline }) {
   const Tag = multiline ? 'textarea' : 'input';
   return (
     <div style={{ display: 'grid', gap: 4, marginBottom: 12 }}>
-      <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted }}>{label}</label>
+      <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted }}>{label}</label>
       <Tag value={value || ''} onChange={e => onChange(e.target.value)}
         rows={multiline ? 3 : undefined}
-        style={{ ...inputStyle, minHeight: multiline ? 80 : undefined }} />
+        style={{ ...inputStyle, minHeight: multiline ? 72 : undefined }} />
     </div>
   );
 }
