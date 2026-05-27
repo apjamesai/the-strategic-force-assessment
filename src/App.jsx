@@ -9,6 +9,7 @@ import WelcomePage from './pages/WelcomePage';
 import Assessment from './pages/Assessment';
 import AdminPage from './pages/AdminPage';
 import ImageStudioPage from './pages/ImageStudioPage';
+import DesignShowcase from './pages/DesignShowcase';
 
 /**
  * Routing policy:
@@ -27,6 +28,7 @@ function App() {
           <Routes>
             <Route path="/" element={<WelcomePage />} />
             <Route path="/assessment" element={<Assessment />} />
+            <Route path="/design-showcase" element={<DesignShowcase />} />
 
             <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/" replace />} />}>
               <Route path="/admin" element={<AdminPage />} />

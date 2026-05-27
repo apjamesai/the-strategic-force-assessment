@@ -215,10 +215,10 @@ export default function SkinEditor({ skinId, allSkins, onSave, onCancel, isNew }
         </div>
         <iframe
           ref={iframeRef}
-          src="/"
+          src="/design-showcase"
           onLoad={handleIframeLoad}
           style={{ flex: 1, border: 'none', width: '100%' }}
-          title="Assessment Preview"
+          title="Design Showcase Preview"
         />
       </div>
     </div>
