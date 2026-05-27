@@ -10,6 +10,7 @@ export function useSkin() {
   return useContext(SkinContext);
 }
 
+// Reference HTML field names: skin.choreoOverrides + skin.discArtOverrides
 export function useChoreoOverrides() {
   const skin = useSkin();
   return skin?.choreoOverrides;
@@ -17,5 +18,5 @@ export function useChoreoOverrides() {
 
 export function useDiscOverrides() {
   const skin = useSkin();
-  return skin?.discOverrides;
+  return skin?.discArtOverrides;
 }
