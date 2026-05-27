@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { SKINS, SKIN_LIST, getActiveSkinId, setActiveSkinId } from '@/lib/sfa/skins/index';
+import { SkinProvider } from '@/lib/sfa/SkinContext';
 import {
   FRAMEWORK, MOCK_PROFILES,
   RULE_DEFAULTS, rebuildScores, computeResults, getRunningFlags,
@@ -444,9 +445,17 @@ function applySkinTheme(skin) {
 
 // ─── MAIN ASSESSMENT COMPONENT ───────────────────────────────
 export default function Assessment() {
-  const activeSkinId = getActiveSkinId();
+  const [activeSkinId, setActiveSkinIdState] = useState(getActiveSkinId);
   const activeSkin = SKINS[activeSkinId] || SKINS.force_trial;
-  const [scenes] = useState(() => activeSkin.scenes);
+  const scenes = activeSkin.scenes;
+  useEffect(() => {
+    const onSkinChange = () => setActiveSkinIdState(getActiveSkinId());
+    window.addEventListener('sfa:skin-change', onSkinChange);
+    window.addEventListener('storage', (e) => { if (e.key === 'mandarin.assessment.currentSkin') onSkinChange(); });
+    return () => {
+      window.removeEventListener('sfa:skin-change', onSkinChange);
+    };
+  }, []);
   const [current, setCurrent] = useState(0);
   const [outgoing, setOutgoing] = useState(null);
   const [user, setUser] = useState({ firstName: '', lastName: '', email: '', gender: 'they' });
@@ -644,14 +653,16 @@ export default function Assessment() {
     if (!user.firstName) setUser({ firstName: 'Citizen', lastName: 'Preview', email: 'preview@local', gender: 'they' });
   };
 
-  // ─── Apply skin theme on mount ───────────────────────────────
+  // ─── Apply skin theme whenever skin changes ──────────────────
   useEffect(() => {
     applySkinTheme(activeSkin);
-    // Apply body classes (e.g. skin-petals for Yi)
+    // Clear any previously-applied skin body classes
+    document.body.classList.forEach(c => { if (c.startsWith('skin-')) document.body.classList.remove(c); });
+    // Apply this skin's body classes (e.g. skin-petals for Yi)
     if (activeSkin.bodyClasses?.length) {
       activeSkin.bodyClasses.forEach(cls => document.body.classList.add(cls));
     }
-  }, []);
+  }, [activeSkinId]);
 
   // ─── Particles ───────────────────────────────────────────────
   useEffect(() => {
@@ -781,7 +792,7 @@ export default function Assessment() {
   }
 
   return (
-    <div className={`sfa-root interactive${adminOpen ? ' admin-open' : ''}`}
+    <SkinProvider skin={activeSkin}><div className={`sfa-root interactive${adminOpen ? ' admin-open' : ''}`}
       style={{ position: 'fixed', inset: 0 }}>
       {/* Atmosphere */}
       <div className="sfa-grain"></div>
@@ -886,5 +897,6 @@ export default function Assessment() {
         </div>
       )}
     </div>
+    </SkinProvider>
   );
 }
