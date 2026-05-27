@@ -218,7 +218,7 @@ body.interactive .sfa-cursor-glow { opacity: 1; }
 .sfa-stage { position: relative; width: 100vw; min-height: 100vh; z-index: 10; overflow-x: hidden; }
 .sfa-scene { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 1.4s var(--ease), visibility 0s linear 1.4s; padding: 9vh 6vw 12vh; overflow-y: auto; overflow-x: hidden; }
 
-.sfa-scene.sfa-active {
+.sfa-scene.active {
   opacity: 1;
   visibility: visible;
   transition: opacity 1.6s var(--ease), visibility 0s linear 0s;
@@ -386,7 +386,7 @@ h3.sfa-display {
   margin-right: 0.22em;
 }
 
-.sfa-active .sfa-reveal-word {
+.active .sfa-reveal-word {
   opacity: 1;
   transform: translateY(0) translateZ(0);
   filter: blur(0);
@@ -409,7 +409,7 @@ h3.sfa-display {
   transition: opacity 2s var(--ease), stroke-dashoffset 3s var(--ease);
 }
 
-.sfa-active .sfa-choreo line, .sfa-active .sfa-choreo path, .sfa-active .sfa-choreo circle {
+.active .sfa-choreo line, .active .sfa-choreo path, .active .sfa-choreo circle {
   opacity: 1;
 }
 
@@ -864,7 +864,7 @@ h3.sfa-display {
   font-weight: 400;
 }
 
-.sfa-q-advance.sfa-ready {
+.sfa-q-advance.ready {
   opacity: 1;
   pointer-events: auto;
 }
@@ -927,7 +927,7 @@ h3.sfa-display {
   display: none;
 }
 
-.sfa-results-stage.sfa-active { display: block; }
+.sfa-results-stage.active { display: block; }
 
 .sfa-results-inner {
   max-width: 1200px;
@@ -1631,7 +1631,7 @@ body.admin-open .sfa-cursor, body.admin-open .sfa-cursor-glow { display: none !i
   filter: brightness(1.4) drop-shadow(0 0 12px var(--amber));
 }
 
-.sfa-wheel-segment.sfa-active {
+.sfa-wheel-segment.active {
   filter: brightness(1.5) drop-shadow(0 0 16px var(--amber-bright));
 }
 
@@ -1650,7 +1650,7 @@ body.admin-open .sfa-cursor, body.admin-open .sfa-cursor-glow { display: none !i
 }
 
 .sfa-wheel-segment:hover ~ .sfa-wheel-label,
-.sfa-wheel-label.sfa-active { fill: var(--amber); }
+.sfa-wheel-label.active { fill: var(--amber); }
 
 .sfa-wheel-level-arc {
   font-family: var(--serif);
@@ -1662,7 +1662,7 @@ body.admin-open .sfa-cursor, body.admin-open .sfa-cursor-glow { display: none !i
   font-weight: 300;
 }
 
-.sfa-wheel-level-arc.sfa-active { fill: var(--amber); }
+.sfa-wheel-level-arc.active { fill: var(--amber); }
 
 .sfa-wheel-center-disk {
   fill: #0d0908;
@@ -1686,7 +1686,7 @@ body.admin-open .sfa-cursor, body.admin-open .sfa-cursor-glow { display: none !i
   transition: fill 0.4s var(--ease), stroke 0.4s var(--ease);
 }
 
-.sfa-wheel-segment.sfa-active + .sfa-wheel-icon, .sfa-wheel-icon.sfa-active {
+.sfa-wheel-segment.active + .sfa-wheel-icon, .sfa-wheel-icon.active {
   fill: var(--amber); stroke: var(--amber);
 }
 
@@ -2978,7 +2978,7 @@ body.previewing .sfa-results-stage { padding-top: 14vh; }
   border-bottom: 1px solid transparent;
 }
 .sfa-admin-tab:hover { color: var(--ink); }
-.sfa-admin-tab.sfa-active { color: var(--amber); border-bottom-color: var(--amber); }
+.sfa-admin-tab.active { color: var(--amber); border-bottom-color: var(--amber); }
 
 .sfa-admin-close {
   background: transparent; border: 1px solid rgba(255,255,255,0.1);
@@ -3031,7 +3031,7 @@ body.previewing .sfa-results-stage { padding-top: 14vh; }
   border-radius: 100px;
 }
 .sfa-admin-base-pill:hover { color: var(--ink); border-color: rgba(255,255,255,0.2); }
-.sfa-admin-base-pill.sfa-active {
+.sfa-admin-base-pill.active {
   color: var(--amber);
   border-color: var(--amber);
   background: rgba(255,90,44,0.06);
@@ -3537,7 +3537,7 @@ body.has-back .sfa-location-tag { left: calc(4vw + 100px); }
   overflow-x: hidden;
 }
 
-.sfa-scene.sfa-active {
+.sfa-scene.active {
   opacity: 1;
   visibility: visible;
   transition: opacity 1.6s var(--ease), visibility 0s linear 0s;
