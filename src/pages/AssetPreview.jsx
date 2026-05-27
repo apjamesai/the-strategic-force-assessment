@@ -14,34 +14,43 @@ export default function AssetPreview() {
   // Listen for skin changes and CSS variable updates
   useEffect(() => {
     const handleSkinChange = () => setActiveSkinId(getActiveSkinId());
-    const handleStyleChange = () => setStyleUpdate(v => v + 1);
     
     window.addEventListener('sfa:skin-change', handleSkinChange);
     
-    // Watch for style changes on root element
+    // Watch for style changes on root element with high-frequency polling as fallback
     const observer = new MutationObserver(() => setStyleUpdate(v => v + 1));
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+    observer.observe(document.documentElement, { attributes: true });
+    
+    // Fallback: poll for changes every 200ms to catch all updates
+    const interval = setInterval(() => setStyleUpdate(v => v + 1), 200);
     
     return () => {
       window.removeEventListener('sfa:skin-change', handleSkinChange);
       observer.disconnect();
+      clearInterval(interval);
     };
   }, []);
 
-  // Get theme value from inline styles first, then computed styles
+  // Get theme value from multiple sources to ensure live updates
   const getThemeValue = useCallback((key) => {
     const k = key.startsWith('--') ? key : `--${key}`;
     try {
-      // Try inline styles first (live edits set here)
+      // Priority 1: inline styles (live edits)
       let val = document.documentElement.style.getPropertyValue(k).trim();
       if (val) return val;
-      // Fall back to computed styles
+      
+      // Priority 2: computed styles
       val = getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+      if (val) return val;
+      
+      // Priority 3: skin object as fallback
+      const stripKey = k.startsWith('--') ? k.slice(2) : k;
+      val = skin.theme?.[k] || skin.theme?.[stripKey];
       return val || undefined;
     } catch {
       return undefined;
     }
-  }, [styleUpdate]);
+  }, [styleUpdate, skin]);
 
   const Section = ({ title, children }) => (
     <section style={{ marginBottom: 60 }}>
