@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { SKINS, getActiveSkinId } from '@/lib/sfa/skins/index';
 
 /**
@@ -28,15 +28,20 @@ export default function AssetPreview() {
     };
   }, []);
 
-  // Get theme value from computed styles (reflects live edits)
-  const getThemeValue = (key) => {
+  // Get theme value from inline styles first, then computed styles
+  const getThemeValue = useCallback((key) => {
     const k = key.startsWith('--') ? key : `--${key}`;
     try {
-      return getComputedStyle(document.documentElement).getPropertyValue(k).trim() || undefined;
+      // Try inline styles first (live edits set here)
+      let val = document.documentElement.style.getPropertyValue(k).trim();
+      if (val) return val;
+      // Fall back to computed styles
+      val = getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+      return val || undefined;
     } catch {
       return undefined;
     }
-  };
+  }, [styleUpdate]);
 
   const Section = ({ title, children }) => (
     <section style={{ marginBottom: 60 }}>
