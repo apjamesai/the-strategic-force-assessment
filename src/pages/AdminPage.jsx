@@ -216,7 +216,7 @@ function ScoringTab({ activeSkin, scoring, setScoring }) {
               const value = overrides[overrideKey] ?? baseScore;
               return (
                 <div key={oi} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, marginBottom: 8 }}>
-                  <div style={{ color: 'var(--ink-mute)', fontSize: 13 }}>{opt.label || opt.text || opt}</div>
+                  <div style={{ color: 'var(--ink-mute)', fontSize: 13 }}>{opt.label || opt.text || (typeof opt === 'string' ? opt : JSON.stringify(opt))}</div>
                   <input type="text" value={value}
                     onChange={e => setScoring(prev => ({ ...prev, [skinId]: { ...(prev[skinId] || {}), [overrideKey]: e.target.value } }))}
                     style={inputStyle}
