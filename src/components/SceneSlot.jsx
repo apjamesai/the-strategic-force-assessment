@@ -1,5 +1,9 @@
 import React, { useRef, useEffect } from 'react';
 
+// Module-level flag: the very first SceneSlot ever mounted should appear
+// immediately (no fade-in), because there's no previous scene to fade from.
+let _firstSceneShown = false;
+
 /**
  * SceneSlot — wraps one scene's DOM with the 1.4 s cross-fade behaviour.
  *
@@ -21,13 +25,10 @@ import React, { useRef, useEffect } from 'react';
 export default function SceneSlot({ children, active, outgoing, isCrawl, isWhooshing }) {
   const ref = useRef(null);
 
-  // Bake .active into the className ONLY when outgoing. That way the first
-  // paint of the outgoing slot is already at opacity:1, and removing the
-  // class in useEffect triggers the CSS fade-out.
   const cls = [
     'sfa-scene',
     outgoing ? 'active' : '',
-    isCrawl ? 'sfa-crawl-scene' : '',
+    isCrawl ? 'crawl-scene' : '',
     isWhooshing ? 'whooshing' : ''
   ].filter(Boolean).join(' ');
 
@@ -37,22 +38,27 @@ export default function SceneSlot({ children, active, outgoing, isCrawl, isWhoos
 
     if (outgoing) {
       // First paint: opacity 1 (.active already in className).
-      // Next frame: remove .active → CSS transition fades opacity 1 → 0.
+      // Next frame: remove .active → CSS fades 1 → 0.
       const r1 = requestAnimationFrame(() => {
         if (el) el.classList.remove('active');
       });
       el._raf1 = r1;
     } else if (active) {
-      // First paint: opacity 0 (no .active in className).
-      // Double rAF: first frame paints opacity:0, second adds .active to
-      // trigger CSS fade-in over 1.6 s.
-      const r1 = requestAnimationFrame(() => {
-        const r2 = requestAnimationFrame(() => {
-          if (el) el.classList.add('active');
+      if (!_firstSceneShown) {
+        // Very first scene ever — add .active immediately (no prior scene to fade from).
+        _firstSceneShown = true;
+        el.classList.add('active');
+      } else {
+        // Subsequent scenes — double rAF so the opacity:0 first-paint gives
+        // the CSS transition a "from" value to animate from.
+        const r1 = requestAnimationFrame(() => {
+          const r2 = requestAnimationFrame(() => {
+            if (el) el.classList.add('active');
+          });
+          el._raf2 = r2;
         });
-        el._raf2 = r2;
-      });
-      el._raf1 = r1;
+        el._raf1 = r1;
+      }
     }
 
     return () => {
