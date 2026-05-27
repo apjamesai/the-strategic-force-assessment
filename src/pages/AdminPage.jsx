@@ -66,8 +66,7 @@ const btnOutline = {
 const ADMIN_SECONDARY_BASE_DEFAULT = 'hidden_drifter';
 const TABS = [
   { key: 'archetypes', label: 'Archetypes' },
-  { key: 'content',    label: 'Content'    },
-  { key: 'scoring',    label: 'Scoring'    },
+  { key: 'questions',  label: 'Questions'  },
   { key: 'rules',      label: 'Rules'      },
   { key: 'skins',      label: 'Skins'      },
   { key: 'results',    label: 'Results'    },
@@ -210,7 +209,7 @@ export default function AdminPage() {
         </aside>
 
         {/* ── Content ── */}
-        {(tab === 'content' || tab === 'scoring') ? (
+        {tab === 'questions' ? (
           <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
             <QuestionEditor
               activeSkin={activeSkin}
