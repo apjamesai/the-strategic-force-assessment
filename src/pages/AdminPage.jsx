@@ -4,6 +4,7 @@ import {
   RULE_DEFAULTS,
 } from '@/lib/sfa/engine';
 import { SKINS, SKIN_LIST, getActiveSkinId, setActiveSkinId } from '@/lib/sfa/skins/index';
+import QuestionEditor from '@/components/admin/QuestionEditor';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a15850b10cbc3f2a02765fd/f1da5dcfe_Mandarin_Logo_Horizontal_Orange_Gradient.svg';
 
@@ -209,14 +210,22 @@ export default function AdminPage() {
         </aside>
 
         {/* ── Content ── */}
-        <main style={{ flex: 1, padding: 'clamp(24px, 4vw, 40px) clamp(20px, 4vw, 48px)', overflowY: 'auto', minWidth: 0 }}>
-          {tab === 'archetypes' && <ArchetypesTab onPreview={handlePreview} secondaryBase={secondaryBase} setSecondaryBase={setSecondaryBase} />}
-          {tab === 'content'    && <ContentTab activeSkin={activeSkin} content={content} setContent={setContent} />}
-          {tab === 'scoring'    && <ScoringTab activeSkin={activeSkin} scoring={scoring} setScoring={setScoring} />}
-          {tab === 'rules'      && <RulesTab rules={rules} setRules={setRules} />}
-          {tab === 'skins'      && <SkinsTab activeSkinIdState={activeSkinIdState} switchSkin={switchSkin} />}
-          {tab === 'results'    && <ResultsTab />}
-        </main>
+        {(tab === 'content' || tab === 'scoring') ? (
+          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <QuestionEditor
+              activeSkin={activeSkin}
+              content={content} setContent={setContent}
+              scoring={scoring} setScoring={setScoring}
+            />
+          </div>
+        ) : (
+          <main style={{ flex: 1, padding: 'clamp(24px, 4vw, 40px) clamp(20px, 4vw, 48px)', overflowY: 'auto', minWidth: 0 }}>
+            {tab === 'archetypes' && <ArchetypesTab onPreview={handlePreview} secondaryBase={secondaryBase} setSecondaryBase={setSecondaryBase} />}
+            {tab === 'rules'      && <RulesTab rules={rules} setRules={setRules} />}
+            {tab === 'skins'      && <SkinsTab activeSkinIdState={activeSkinIdState} switchSkin={switchSkin} />}
+            {tab === 'results'    && <ResultsTab />}
+          </main>
+        )}
       </div>
 
       <style>{`
@@ -287,102 +296,7 @@ function ArchCard({ tag, name, desc, cta, onClick }) {
   );
 }
 
-/* ── Content ── */
-function ContentTab({ activeSkin, content, setContent }) {
-  const skinId = activeSkin.id;
-  const overrides = content[skinId] || {};
-  const scenes = activeSkin.scenes || [];
 
-  const updateScene = (idx, field, value) => {
-    setContent(prev => ({
-      ...prev,
-      [skinId]: { ...(prev[skinId] || {}), [idx]: { ...((prev[skinId] || {})[idx] || {}), [field]: value } }
-    }));
-  };
-
-  const clearScene = (idx) => {
-    setContent(prev => {
-      const next = { ...(prev[skinId] || {}) };
-      delete next[idx];
-      return { ...prev, [skinId]: next };
-    });
-  };
-
-  const editableScenes = scenes
-    .map((s, i) => ({ s, i }))
-    .filter(({ s }) => ['landing','crawl','narrative','narrative-scene','midpoint','twist','end-reflection','results-launch','intake'].includes(s.type));
-
-  return (
-    <div>
-      <SectionHead title="Content" sub={`Override scene copy for ${activeSkin.name}. Edits are saved per-skin in this browser.`} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {editableScenes.map(({ s, i }) => {
-          const o = overrides[i] || {};
-          return (
-            <div key={i} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 2 }}>
-              <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, background: C.lightBg, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.orange }}>
-                  {i + 1}. {s.type}{s.locationLabel ? ` · ${s.locationLabel}` : ''}
-                </span>
-                {overrides[i] && <button onClick={() => clearScene(i)} style={btnOutline}>Reset</button>}
-              </div>
-              <div style={{ padding: 16 }}>
-                {Array.isArray(s.title) && <Field label="Title" value={o.title ?? s.title.join(' ')} onChange={v => updateScene(i, 'title', v)} />}
-                {typeof s.title === 'string' && <Field label="Title" value={o.title ?? s.title} onChange={v => updateScene(i, 'title', v)} />}
-                {s.sub  && <Field label="Sub"  value={o.sub  ?? s.sub}  onChange={v => updateScene(i, 'sub',  v)} />}
-                {s.note && <Field label="Note" value={o.note ?? s.note} onChange={v => updateScene(i, 'note', v)} multiline />}
-                {s.eyebrow && <Field label="Eyebrow" value={o.eyebrow ?? s.eyebrow} onChange={v => updateScene(i, 'eyebrow', v)} />}
-                {Array.isArray(s.body) && <Field label="Body (lines, ¶ separated)" value={o.body ?? s.body.join(' ¶ ')} onChange={v => updateScene(i, 'body', v)} multiline />}
-                {Array.isArray(s.paragraphs) && <Field label="Paragraphs (¶ separated)" value={o.paragraphs ?? s.paragraphs.join(' ¶ ')} onChange={v => updateScene(i, 'paragraphs', v)} multiline />}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/* ── Scoring ── */
-function ScoringTab({ activeSkin, scoring, setScoring }) {
-  const skinId = activeSkin.id;
-  const overrides = scoring[skinId] || {};
-  const questions = (activeSkin.scenes || []).map((s, i) => ({ s, i })).filter(({ s }) => s.type === 'question');
-
-  return (
-    <div>
-      <SectionHead title="Scoring" sub={`Adjust per-option score values for ${activeSkin.name}.`} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {questions.map(({ s, i }) => (
-          <div key={i} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 2 }}>
-            <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, background: C.lightBg }}>
-              <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.orange }}>
-                Q{i + 1} · {s.qType || 'choice'} · {s.practice || s.risk || ''}
-              </div>
-              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.muted, marginTop: 4 }}>{s.prompt || s.scaleHigh || ''}</div>
-            </div>
-            <div style={{ padding: 16 }}>
-              {Array.isArray(s.options) && s.options.map((opt, oi) => {
-                const baseScore = typeof opt.score === 'object' ? Object.entries(opt.score).map(([k, v]) => `${k}=${v}`).join(', ') : (opt.score ?? '');
-                const overrideKey = `${i}.${oi}`;
-                const value = overrides[overrideKey] ?? baseScore;
-                return (
-                  <div key={oi} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, marginBottom: 8, alignItems: 'center' }}>
-                    <div style={{ color: C.muted, fontSize: 13 }}>{opt.label || opt.text || (typeof opt === 'string' ? opt : JSON.stringify(opt))}</div>
-                    <input type="text" value={value}
-                      onChange={e => setScoring(prev => ({ ...prev, [skinId]: { ...(prev[skinId] || {}), [overrideKey]: e.target.value } }))}
-                      style={inputStyle} />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-        {questions.length === 0 && <p style={{ color: C.muted, fontStyle: 'italic', fontSize: 13 }}>No question scenes in this skin.</p>}
-      </div>
-    </div>
-  );
-}
 
 /* ── Rules ── */
 function RulesTab({ rules, setRules }) {
@@ -465,19 +379,6 @@ function ResultsTab() {
     <div>
       <SectionHead title="Results" sub="Session results are saved locally in your browser." />
       <p style={{ color: C.muted, fontStyle: 'italic', fontSize: 13 }}>No completed sessions in this browser yet.</p>
-    </div>
-  );
-}
-
-/* ── Field ── */
-function Field({ label, value, onChange, multiline }) {
-  const Tag = multiline ? 'textarea' : 'input';
-  return (
-    <div style={{ display: 'grid', gap: 4, marginBottom: 12 }}>
-      <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted }}>{label}</label>
-      <Tag value={value || ''} onChange={e => onChange(e.target.value)}
-        rows={multiline ? 3 : undefined}
-        style={{ ...inputStyle, minHeight: multiline ? 72 : undefined }} />
     </div>
   );
 }
