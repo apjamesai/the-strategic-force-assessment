@@ -339,20 +339,42 @@ function RulesTab({ rules, setRules }) {
 function SkinsTab({ activeSkinIdState, switchSkin }) {
   const [customSkins, setCustomSkins] = useState(() => lsGet('mandarin.assessment.skins', {}));
   const [editingSkinId, setEditingSkinId] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', tagline: '' });
+  const [editForm, setEditForm] = useState({ name: '', tagline: '', theme: {} });
   const [showNewForm, setShowNewForm] = useState(false);
 
   const allSkins = { ...SKINS, ...customSkins };
+  
+  const themeFields = [
+    { key: 'bg', label: 'Background', type: 'color' },
+    { key: 'panel', label: 'Panel', type: 'color' },
+    { key: 'ink', label: 'Text (ink)', type: 'color' },
+    { key: 'amber', label: 'Accent (amber)', type: 'color' },
+    { key: 'brand-orange', label: 'Brand Orange', type: 'color' },
+    { key: 'serif', label: 'Serif Font', type: 'text' },
+    { key: 'sans', label: 'Sans Font', type: 'text' },
+  ];
 
   const startEdit = (skinId) => {
     const skin = allSkins[skinId];
-    setEditForm({ name: skin.name, tagline: skin.tagline });
+    setEditForm({ 
+      name: skin.name, 
+      tagline: skin.tagline,
+      theme: skin.theme || {}
+    });
     setEditingSkinId(skinId);
   };
 
   const saveEdit = () => {
     if (!editForm.name.trim()) return;
-    const updated = { ...customSkins, [editingSkinId]: { ...allSkins[editingSkinId], ...editForm } };
+    const updated = { 
+      ...customSkins, 
+      [editingSkinId]: { 
+        ...allSkins[editingSkinId], 
+        name: editForm.name,
+        tagline: editForm.tagline,
+        theme: editForm.theme 
+      } 
+    };
     setCustomSkins(updated);
     lsSet('mandarin.assessment.skins', updated);
     setEditingSkinId(null);
@@ -366,13 +388,13 @@ function SkinsTab({ activeSkinIdState, switchSkin }) {
       name: editForm.name,
       tagline: editForm.tagline,
       scenes: SKINS.force_trial.scenes,
-      theme: SKINS.force_trial.theme,
+      theme: editForm.theme || { ...SKINS.force_trial.theme },
     };
     const updated = { ...customSkins, [newId]: newSkin };
     setCustomSkins(updated);
     lsSet('mandarin.assessment.skins', updated);
     setShowNewForm(false);
-    setEditForm({ name: '', tagline: '' });
+    setEditForm({ name: '', tagline: '', theme: {} });
   };
 
   const deleteSkin = (skinId) => {
@@ -389,19 +411,62 @@ function SkinsTab({ activeSkinIdState, switchSkin }) {
 
       {/* Edit modal */}
       {editingSkinId && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: C.white, borderRadius: 4, padding: 28, width: 400, boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, overflow: 'auto' }}>
+          <div style={{ background: C.white, borderRadius: 4, padding: 28, width: '90%', maxWidth: 600, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', margin: '20px auto' }}>
             <h3 style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 20, textTransform: 'uppercase' }}>Edit Skin</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
-              <div>
-                <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Name</label>
-                <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Tagline</label>
-                <textarea value={editForm.tagline} onChange={e => setEditForm({ ...editForm, tagline: e.target.value })} style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} />
+            
+            {/* Basic info */}
+            <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: `1px solid ${C.border}` }}>
+              <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>Basic Info</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Name</label>
+                  <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Tagline</label>
+                  <textarea value={editForm.tagline} onChange={e => setEditForm({ ...editForm, tagline: e.target.value })} style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} />
+                </div>
               </div>
             </div>
+
+            {/* Theme variables */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>Theme Variables</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                {themeFields.map(field => (
+                  <div key={field.key}>
+                    <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 8, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 4 }}>{field.label}</label>
+                    {field.type === 'color' ? (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <input 
+                          type="color" 
+                          value={editForm.theme[field.key] || ''} 
+                          onChange={e => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: e.target.value } })}
+                          style={{ width: 40, height: 36, border: `1px solid ${C.border}`, borderRadius: 2, cursor: 'pointer' }}
+                        />
+                        <input 
+                          type="text" 
+                          value={editForm.theme[field.key] || ''} 
+                          onChange={e => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: e.target.value } })}
+                          style={{ ...inputStyle, flex: 1, fontSize: 11 }}
+                          placeholder="#000000"
+                        />
+                      </div>
+                    ) : (
+                      <input 
+                        type="text" 
+                        value={editForm.theme[field.key] || ''} 
+                        onChange={e => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: e.target.value } })}
+                        style={inputStyle}
+                        placeholder={field.key === 'serif' ? "'Georgia', serif" : "'Inter', sans-serif"}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={saveEdit} style={btnOrange}>Save</button>
               <button onClick={() => setEditingSkinId(null)} style={btnOutline}>Cancel</button>
@@ -412,22 +477,65 @@ function SkinsTab({ activeSkinIdState, switchSkin }) {
 
       {/* New skin modal */}
       {showNewForm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: C.white, borderRadius: 4, padding: 28, width: 400, boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, overflow: 'auto' }}>
+          <div style={{ background: C.white, borderRadius: 4, padding: 28, width: '90%', maxWidth: 600, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', margin: '20px auto' }}>
             <h3 style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 20, textTransform: 'uppercase' }}>New Skin</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
-              <div>
-                <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Name</label>
-                <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} placeholder="e.g., Space Odyssey" style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Tagline</label>
-                <textarea value={editForm.tagline} onChange={e => setEditForm({ ...editForm, tagline: e.target.value })} placeholder="e.g., Explore leadership in the cosmos" style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} />
+            
+            {/* Basic info */}
+            <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: `1px solid ${C.border}` }}>
+              <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>Basic Info</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Name</label>
+                  <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} placeholder="e.g., Space Odyssey" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Tagline</label>
+                  <textarea value={editForm.tagline} onChange={e => setEditForm({ ...editForm, tagline: e.target.value })} placeholder="e.g., Explore leadership in the cosmos" style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} />
+                </div>
               </div>
             </div>
+
+            {/* Theme variables */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>Theme Variables</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                {themeFields.map(field => (
+                  <div key={field.key}>
+                    <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 8, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 4 }}>{field.label}</label>
+                    {field.type === 'color' ? (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <input 
+                          type="color" 
+                          value={editForm.theme[field.key] || '#000000'} 
+                          onChange={e => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: e.target.value } })}
+                          style={{ width: 40, height: 36, border: `1px solid ${C.border}`, borderRadius: 2, cursor: 'pointer' }}
+                        />
+                        <input 
+                          type="text" 
+                          value={editForm.theme[field.key] || ''} 
+                          onChange={e => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: e.target.value } })}
+                          style={{ ...inputStyle, flex: 1, fontSize: 11 }}
+                          placeholder="#000000"
+                        />
+                      </div>
+                    ) : (
+                      <input 
+                        type="text" 
+                        value={editForm.theme[field.key] || ''} 
+                        onChange={e => setEditForm({ ...editForm, theme: { ...editForm.theme, [field.key]: e.target.value } })}
+                        style={inputStyle}
+                        placeholder={field.key === 'serif' ? "'Georgia', serif" : "'Inter', sans-serif"}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={createNewSkin} style={btnOrange}>Create</button>
-              <button onClick={() => { setShowNewForm(false); setEditForm({ name: '', tagline: '' }); }} style={btnOutline}>Cancel</button>
+              <button onClick={() => { setShowNewForm(false); setEditForm({ name: '', tagline: '', theme: {} }); }} style={btnOutline}>Cancel</button>
             </div>
           </div>
         </div>
