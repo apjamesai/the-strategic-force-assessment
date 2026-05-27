@@ -210,9 +210,9 @@ export default function SkinEditor({ skinId, allSkins, onSave, onCancel, isNew }
                    <div key={field.key}>
                      <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 7, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 3 }}>{field.label}</label>
                      {isFont ? (
-                       <select value={val} onChange={e => updateTheme(field.key, e.target.value)}
+                       <select value={val || ''} onChange={e => updateTheme(field.key, e.target.value)}
                          style={{ ...inputStyle, fontSize: 11, padding: '5px 8px', cursor: 'pointer' }}>
-                         <option value="">— Select font —</option>
+                         {!val && <option value="">— Select font —</option>}
                          {AVAILABLE_FONTS.map(f => (
                            <option key={f.value} value={f.value}>{f.name}</option>
                          ))}
@@ -268,10 +268,10 @@ export default function SkinEditor({ skinId, allSkins, onSave, onCancel, isNew }
         </div>
         <iframe
           ref={iframeRef}
-          src="/assessment?preview=true"
+          src="/asset-preview"
           onLoad={handleIframeLoad}
-          style={{ flex: 1, border: 'none', width: '100%', overflowY: 'auto' }}
-          title="Assessment Preview"
+          style={{ flex: 1, border: 'none', width: '100%' }}
+          title="Asset Preview"
         />
       </div>
     </div>
