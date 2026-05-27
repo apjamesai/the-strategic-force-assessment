@@ -337,37 +337,145 @@ function RulesTab({ rules, setRules }) {
 
 /* ── Skins ── */
 function SkinsTab({ activeSkinIdState, switchSkin }) {
+  const [customSkins, setCustomSkins] = useState(() => lsGet('mandarin.assessment.skins', {}));
+  const [editingSkinId, setEditingSkinId] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', tagline: '' });
+  const [showNewForm, setShowNewForm] = useState(false);
+
+  const allSkins = { ...SKINS, ...customSkins };
+
+  const startEdit = (skinId) => {
+    const skin = allSkins[skinId];
+    setEditForm({ name: skin.name, tagline: skin.tagline });
+    setEditingSkinId(skinId);
+  };
+
+  const saveEdit = () => {
+    if (!editForm.name.trim()) return;
+    const updated = { ...customSkins, [editingSkinId]: { ...allSkins[editingSkinId], ...editForm } };
+    setCustomSkins(updated);
+    lsSet('mandarin.assessment.skins', updated);
+    setEditingSkinId(null);
+  };
+
+  const createNewSkin = () => {
+    if (!editForm.name.trim()) return;
+    const newId = `custom_${Date.now()}`;
+    const newSkin = {
+      id: newId,
+      name: editForm.name,
+      tagline: editForm.tagline,
+      scenes: SKINS.force_trial.scenes,
+      theme: SKINS.force_trial.theme,
+    };
+    const updated = { ...customSkins, [newId]: newSkin };
+    setCustomSkins(updated);
+    lsSet('mandarin.assessment.skins', updated);
+    setShowNewForm(false);
+    setEditForm({ name: '', tagline: '' });
+  };
+
+  const deleteSkin = (skinId) => {
+    if (!customSkins[skinId]) return;
+    const updated = { ...customSkins };
+    delete updated[skinId];
+    setCustomSkins(updated);
+    lsSet('mandarin.assessment.skins', updated);
+  };
+
   return (
     <div>
       <SectionHead title="Skins" sub="Each skin wraps the same 12-practice assessment in a different narrative universe." />
+
+      {/* Edit modal */}
+      {editingSkinId && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: C.white, borderRadius: 4, padding: 28, width: 400, boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>
+            <h3 style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 20, textTransform: 'uppercase' }}>Edit Skin</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
+              <div>
+                <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Name</label>
+                <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Tagline</label>
+                <textarea value={editForm.tagline} onChange={e => setEditForm({ ...editForm, tagline: e.target.value })} style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={saveEdit} style={btnOrange}>Save</button>
+              <button onClick={() => setEditingSkinId(null)} style={btnOutline}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New skin modal */}
+      {showNewForm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: C.white, borderRadius: 4, padding: 28, width: 400, boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>
+            <h3 style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 20, textTransform: 'uppercase' }}>New Skin</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
+              <div>
+                <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Name</label>
+                <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} placeholder="e.g., Space Odyssey" style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted, display: 'block', marginBottom: 6 }}>Tagline</label>
+                <textarea value={editForm.tagline} onChange={e => setEditForm({ ...editForm, tagline: e.target.value })} placeholder="e.g., Explore leadership in the cosmos" style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={createNewSkin} style={btnOrange}>Create</button>
+              <button onClick={() => { setShowNewForm(false); setEditForm({ name: '', tagline: '' }); }} style={btnOutline}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16, marginBottom: 32 }}>
-        {SKIN_LIST.map(skin => {
-          const isActive = skin.id === activeSkinIdState;
+        {Object.entries(allSkins).map(([key, skin]) => {
+          const isActive = key === activeSkinIdState;
+          const isCustom = !!customSkins[key];
           return (
-            <div key={skin.id} style={{
+            <div key={key} style={{
               background: C.white,
               border: `1px solid ${isActive ? C.orange : C.border}`,
               borderTop: `3px solid ${isActive ? C.orange : C.border}`,
               padding: '20px 18px', borderRadius: 2,
               display: 'flex', flexDirection: 'column', gap: 10,
             }}>
-              {isActive && <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange }}>Active</div>}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                <div>
+                  {isActive && <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 4 }}>Active</div>}
+                  {isCustom && <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.muted, marginBottom: 4 }}>Custom</div>}
+                </div>
+              </div>
               <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 17, color: C.text }}>{skin.name}</div>
               <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.muted, lineHeight: 1.5, flex: 1 }}>{skin.tagline}</div>
-              {!isActive && (
-                <button style={btnOrange} onClick={() => switchSkin(skin.id)}
-                  onMouseEnter={e => e.currentTarget.style.background = '#e03d18'}
-                  onMouseLeave={e => e.currentTarget.style.background = C.orange}
-                >Use this skin</button>
-              )}
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button style={{ ...btnOutline, flex: 1, fontSize: 9 }} onClick={() => startEdit(key)}>Edit</button>
+                {!isActive && (
+                  <button style={btnOrange} onClick={() => switchSkin(key)}>
+                    Use
+                  </button>
+                )}
+                {isCustom && (
+                  <button style={{ ...btnOutline, color: '#ff6b6b', borderColor: '#ffb3b3' }} onClick={() => deleteSkin(key)}>Delete</button>
+                )}
+              </div>
             </div>
           );
         })}
       </div>
-      <a href="/admin/image-studio"
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 10, ...btnOrange, textDecoration: 'none' }}>
-        Open Image Studio →
-      </a>
+
+      <div style={{ display: 'flex', gap: 12 }}>
+        <button onClick={() => setShowNewForm(true)} style={btnOrange}>+ New Skin</button>
+        <a href="/admin/image-studio"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 10, ...btnOutline, textDecoration: 'none' }}>
+          Image Studio →
+        </a>
+      </div>
     </div>
   );
 }
