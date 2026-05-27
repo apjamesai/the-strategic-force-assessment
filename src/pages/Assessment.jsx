@@ -664,6 +664,21 @@ export default function Assessment() {
     }
   }, [activeSkinId]);
 
+  // ─── Sync chrome state to <body> so reference CSS rules fire ────────
+  // The ported CSS uses body.admin-open, body.interactive, body.has-back, etc.
+  useEffect(() => {
+    document.body.classList.add('interactive');
+    return () => document.body.classList.remove('interactive');
+  }, []);
+  useEffect(() => {
+    document.body.classList.toggle('admin-open', adminOpen);
+  }, [adminOpen]);
+  // has-back when chrome shows a back button
+  useEffect(() => {
+    const hasBack = current > 0 && scene && !['landing', 'intake', 'crawl', 'results-launch'].includes(scene.type);
+    document.body.classList.toggle('has-back', !!hasBack);
+  }, [current, scene]);
+
   // ─── Particles ───────────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
