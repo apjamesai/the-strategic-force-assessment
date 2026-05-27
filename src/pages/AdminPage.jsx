@@ -345,13 +345,23 @@ function SkinsTab({ activeSkinIdState, switchSkin }) {
   const allSkins = { ...SKINS, ...customSkins };
   
   const themeFields = [
-    { key: 'bg', label: 'Background', type: 'color' },
-    { key: 'panel', label: 'Panel', type: 'color' },
-    { key: 'ink', label: 'Text (ink)', type: 'color' },
-    { key: 'amber', label: 'Accent (amber)', type: 'color' },
-    { key: 'brand-orange', label: 'Brand Orange', type: 'color' },
-    { key: 'serif', label: 'Serif Font', type: 'text' },
-    { key: 'sans', label: 'Sans Font', type: 'text' },
+    { key: 'bg', label: 'Background (--bg)', type: 'color', hex: '#0c0a0a' },
+    { key: 'bg-deep', label: 'Deep Background (--bg-deep)', type: 'color', hex: '#060505' },
+    { key: 'panel', label: 'Panel (--panel)', type: 'color', hex: '#1e1e23' },
+    { key: 'ink', label: 'Text (--ink)', type: 'color', hex: '#ece5d7' },
+    { key: 'ink-soft', label: 'Text Soft (--ink-soft)', type: 'color', hex: '#d6cdb9' },
+    { key: 'ink-mute', label: 'Text Mute (--ink-mute)', type: 'color', hex: '#b3a994' },
+    { key: 'ink-dim', label: 'Text Dim (--ink-dim)', type: 'color', hex: '#6b6354' },
+    { key: 'ink-label', label: 'Text Label (--ink-label)', type: 'color', hex: '#e6dfd1' },
+    { key: 'amber', label: 'Accent (--amber)', type: 'color', hex: '#ff5a2c' },
+    { key: 'amber-bright', label: 'Accent Bright (--amber-bright)', type: 'color', hex: '#ff8a4a' },
+    { key: 'amber-deep', label: 'Accent Deep (--amber-deep)', type: 'color', hex: '#c93a16' },
+    { key: 'brand-orange', label: 'Brand Orange (--brand-orange)', type: 'color', hex: '#ff481d' },
+    { key: 'brand-tangerine', label: 'Brand Tangerine (--brand-tangerine)', type: 'color', hex: '#ff6b00' },
+    { key: 'brand-yellow', label: 'Brand Yellow (--brand-yellow)', type: 'color', hex: '#feab2b' },
+    { key: 'brand-silver', label: 'Brand Silver (--brand-silver)', type: 'color', hex: '#dbdbdb' },
+    { key: 'serif', label: 'Serif Font (--serif)', type: 'text' },
+    { key: 'sans', label: 'Sans Font (--sans)', type: 'text' },
   ];
 
   const startEdit = (skinId) => {
