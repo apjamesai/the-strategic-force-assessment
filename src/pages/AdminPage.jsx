@@ -5,6 +5,58 @@ import {
 } from '@/lib/sfa/engine';
 import { SKINS, SKIN_LIST, getActiveSkinId, setActiveSkinId } from '@/lib/sfa/skins/index';
 
+/* Brand tokens */
+const C = {
+  orange: '#FF481D',
+  black: '#1E1E23',
+  blackDeep: '#0f0f12',
+  white: '#FFFFFF',
+  silver: '#DBDBDB',
+  lightSilver: '#EEEEEE',
+  muted: 'rgba(219,219,219,0.5)',
+  border: 'rgba(255,255,255,0.08)',
+};
+
+/* Shared styles */
+const inputStyle = {
+  background: 'rgba(0,0,0,0.5)',
+  border: `1px solid ${C.border}`,
+  color: C.white,
+  padding: '8px 12px',
+  fontSize: 13,
+  fontFamily: "'Roboto', sans-serif",
+  outline: 'none',
+  width: '100%',
+  boxSizing: 'border-box',
+  borderRadius: 0,
+};
+const btnGhost = {
+  background: 'transparent',
+  border: `1px solid ${C.border}`,
+  color: C.silver,
+  fontFamily: "'Roboto Condensed', sans-serif",
+  fontWeight: 600,
+  fontSize: 11,
+  letterSpacing: '0.3em',
+  textTransform: 'uppercase',
+  padding: '8px 14px',
+  cursor: 'pointer',
+  transition: 'all 0.2s',
+};
+const btnOrange = {
+  background: C.orange,
+  border: 'none',
+  color: C.white,
+  fontFamily: "'Roboto Condensed', sans-serif",
+  fontWeight: 700,
+  fontSize: 11,
+  letterSpacing: '0.25em',
+  textTransform: 'uppercase',
+  padding: '9px 20px',
+  cursor: 'pointer',
+  transition: 'background 0.2s',
+};
+
 const ADMIN_SECONDARY_BASE_DEFAULT = 'hidden_drifter';
 const TABS = [
   { key: 'archetypes', label: 'Archetypes' },
@@ -15,7 +67,6 @@ const TABS = [
   { key: 'results',    label: 'Results'    }
 ];
 
-// ─── localStorage shims so admin edits persist across page loads
 const LS = {
   rules:   'mandarin.assessment.rules',
   content: 'mandarin.assessment.content',
@@ -29,6 +80,30 @@ function lsSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 }
 
+/* Mandarin M logomark */
+function MandarinMark({ size = 28, color = C.orange }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
+      <path d="M10 88 L10 32 L32 54 L50 18 L68 54 L90 32 L90 88 Z" fill={color} />
+    </svg>
+  );
+}
+
+/* Section heading */
+function SectionHead({ title, sub }) {
+  return (
+    <div style={{ marginBottom: 32, paddingBottom: 20, borderBottom: `1px solid ${C.border}` }}>
+      <h2 style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 28, color: C.white, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '-0.01em' }}>{title}</h2>
+      {sub && <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, color: C.silver, margin: 0, lineHeight: 1.55 }}>{sub}</p>}
+    </div>
+  );
+}
+
+/* Label */
+function Label({ children }) {
+  return <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>{children}</div>;
+}
+
 export default function AdminPage() {
   const [tab, setTab]                 = useState('archetypes');
   const [secondaryBase, setSecondaryBase] = useState(ADMIN_SECONDARY_BASE_DEFAULT);
@@ -39,7 +114,6 @@ export default function AdminPage() {
 
   const activeSkin = SKINS[activeSkinIdState] || SKINS.force_trial;
 
-  // ─── Persist rule/content/scoring overrides ───────────────────────
   useEffect(() => { lsSet(LS.rules, rules); },   [rules]);
   useEffect(() => { lsSet(LS.content, content); }, [content]);
   useEffect(() => { lsSet(LS.scoring, scoring); }, [scoring]);
@@ -51,31 +125,71 @@ export default function AdminPage() {
   const switchSkin = (id) => {
     setActiveSkinId(id);
     setActiveSkinIdStateLocal(id);
-    // Notify any open Assessment tab to swap skin without reload
     window.dispatchEvent(new Event('sfa:skin-change'));
   };
 
   return (
-    <div className="sfa-root" style={{ position: 'fixed', inset: 0, overflow: 'auto', cursor: 'auto' }}>
-      <div className="sfa-admin-panel open" style={{ position: 'relative', height: '100vh' }}>
-        <div className="sfa-admin-topbar">
-          <div className="sfa-admin-brand">
-            <span className="dot"></span>
-            <span>Admin · </span>
-            <span className="label">The Strategic Force Assessment</span>
-          </div>
-          <div className="sfa-admin-tabs">
-            {TABS.map(t => (
-              <button key={t.key} className={`sfa-admin-tab${tab === t.key ? ' active' : ''}`}
-                onClick={() => setTab(t.key)}>{t.label}</button>
-            ))}
-          </div>
-          <a href="/" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 16px', color: 'var(--ink-mute)', fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', textDecoration: 'none' }}>
-            &larr; Back to Assessment
-          </a>
+    <div style={{ background: C.blackDeep, minHeight: '100vh', color: C.white, fontFamily: "'Roboto', sans-serif", cursor: 'auto' }}>
+
+      {/* Top bar */}
+      <div style={{
+        background: C.black, borderBottom: `3px solid ${C.orange}`,
+        padding: '0 32px', height: 64,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        position: 'sticky', top: 0, zIndex: 100,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <MandarinMark size={26} color={C.orange} />
+          <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 18, color: C.white, letterSpacing: '0.04em' }}>mandarin</span>
+          <span style={{ color: C.muted, margin: '0 8px', fontSize: 18 }}>|</span>
+          <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 12, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.silver }}>Admin Panel</span>
+        </div>
+        <a href="/"
+          style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 10, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.silver, textDecoration: 'none', padding: '8px 16px', border: `1px solid ${C.border}`, transition: 'all 0.2s' }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = C.orange; e.currentTarget.style.color = C.orange; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.silver; }}
+        >
+          ← Back to Assessment
+        </a>
+      </div>
+
+      <div style={{ display: 'flex', minHeight: 'calc(100vh - 64px)' }}>
+
+        {/* Sidebar nav */}
+        <div style={{
+          width: 200, flexShrink: 0,
+          background: C.black,
+          borderRight: `1px solid ${C.border}`,
+          paddingTop: 32,
+          position: 'sticky', top: 64, height: 'calc(100vh - 64px)', overflowY: 'auto',
+        }}>
+          {TABS.map(t => (
+            <button key={t.key}
+              onClick={() => setTab(t.key)}
+              style={{
+                display: 'block', width: '100%', textAlign: 'left',
+                padding: '14px 24px',
+                background: tab === t.key ? `rgba(255,72,29,0.12)` : 'transparent',
+                borderLeft: `3px solid ${tab === t.key ? C.orange : 'transparent'}`,
+                border: 'none',
+                borderLeft: `3px solid ${tab === t.key ? C.orange : 'transparent'}`,
+                color: tab === t.key ? C.white : C.silver,
+                fontFamily: "'Roboto Condensed', sans-serif",
+                fontWeight: tab === t.key ? 700 : 400,
+                fontSize: 13,
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
-        <div className="sfa-admin-body">
+        {/* Main content area */}
+        <div style={{ flex: 1, padding: '40px 48px', overflowY: 'auto', maxWidth: 1200 }}>
           {tab === 'archetypes' && <ArchetypesTab onPreview={handlePreview} secondaryBase={secondaryBase} setSecondaryBase={setSecondaryBase} />}
           {tab === 'content'    && <ContentTab activeSkin={activeSkin} content={content} setContent={setContent} />}
           {tab === 'scoring'    && <ScoringTab activeSkin={activeSkin} scoring={scoring} setScoring={setScoring} />}
@@ -88,41 +202,56 @@ export default function AdminPage() {
   );
 }
 
-// ─── Archetype previews ──────────────────────────────────────
+/* ── Archetypes tab ──────────────────────────────────────────── */
 function ArchetypesTab({ onPreview, secondaryBase, setSecondaryBase }) {
   return (
     <div>
-      <div className="sfa-admin-section-title">Switch between archetypes</div>
-      <div className="sfa-admin-section-sub">Five score-band archetypes plus six secondary pattern overlays.</div>
+      <SectionHead title="Archetypes" sub="Five score-band archetypes plus six secondary pattern overlays." />
 
-      <div style={{ fontFamily: 'var(--sans)', fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: 'var(--amber)', marginBottom: 12 }}>Primary · band-based</div>
-      <div className="sfa-admin-arch-grid">
+      <Label>Primary · band-based</Label>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 1, background: C.border, marginBottom: 32 }}>
         {Object.entries(ARCHETYPES).map(([key, a]) => (
-          <div key={key} className="sfa-admin-arch-card" onClick={() => onPreview(key, null)}>
-            <div className="tag">{a.band}</div>
-            <div className="name">{a.name}</div>
-            <div className="head">{a.headline}</div>
-            <div className="cta">Preview result &rarr;</div>
+          <div key={key}
+            onClick={() => onPreview(key, null)}
+            style={{ background: C.black, padding: '22px 20px', cursor: 'pointer', borderLeft: `3px solid transparent`, transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderLeftColor = C.orange; e.currentTarget.style.background = `rgba(255,72,29,0.06)`; }}
+            onMouseLeave={e => { e.currentTarget.style.borderLeftColor = 'transparent'; e.currentTarget.style.background = C.black; }}
+          >
+            <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange, marginBottom: 8 }}>{a.band}</div>
+            <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 18, color: C.white, marginBottom: 6 }}>{a.name}</div>
+            <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.silver, lineHeight: 1.5, marginBottom: 12 }}>{a.headline}</div>
+            <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 10, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted }}>Preview result →</div>
           </div>
         ))}
       </div>
 
-      <div style={{ fontFamily: 'var(--sans)', fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: 'var(--amber)', margin: '36px 0 12px' }}>Combine secondary with primary base</div>
-      <div className="sfa-admin-base-pills">
+      <Label>Secondary patterns — choose base archetype first</Label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
         {Object.entries(ARCHETYPES).map(([key, a]) => (
-          <button key={key} className={`sfa-admin-base-pill${secondaryBase === key ? ' active' : ''}`}
-            onClick={() => setSecondaryBase(key)}>{a.name}</button>
+          <button key={key}
+            onClick={() => setSecondaryBase(key)}
+            style={{
+              ...btnGhost,
+              borderColor: secondaryBase === key ? C.orange : C.border,
+              color: secondaryBase === key ? C.orange : C.silver,
+              background: secondaryBase === key ? 'rgba(255,72,29,0.08)' : 'transparent',
+            }}
+          >{a.name}</button>
         ))}
       </div>
 
-      <div style={{ fontFamily: 'var(--sans)', fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: 'var(--amber)', margin: '24px 0 12px' }}>Secondary · pattern overlays</div>
-      <div className="sfa-admin-arch-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 1, background: C.border }}>
         {Object.entries(SECONDARY_PATTERNS).map(([key, p]) => (
-          <div key={key} className="sfa-admin-arch-card" onClick={() => onPreview(secondaryBase, key)}>
-            <div className="tag">Secondary pattern · overlay</div>
-            <div className="name">{p.name}</div>
-            <div className="head">{p.headline}</div>
-            <div className="cta">Preview on chosen primary &rarr;</div>
+          <div key={key}
+            onClick={() => onPreview(secondaryBase, key)}
+            style={{ background: C.black, padding: '22px 20px', cursor: 'pointer', borderLeft: `3px solid transparent`, transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderLeftColor = C.orange; e.currentTarget.style.background = `rgba(255,72,29,0.06)`; }}
+            onMouseLeave={e => { e.currentTarget.style.borderLeftColor = 'transparent'; e.currentTarget.style.background = C.black; }}
+          >
+            <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.muted, marginBottom: 8 }}>Secondary overlay</div>
+            <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 18, color: C.white, marginBottom: 6 }}>{p.name}</div>
+            <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.silver, lineHeight: 1.5, marginBottom: 12 }}>{p.headline}</div>
+            <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 10, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.muted }}>Preview on chosen primary →</div>
           </div>
         ))}
       </div>
@@ -130,7 +259,7 @@ function ArchetypesTab({ onPreview, secondaryBase, setSecondaryBase }) {
   );
 }
 
-// ─── Content editor (scene text overrides) ────────────────────
+/* ── Content tab ─────────────────────────────────────────────── */
 function ContentTab({ activeSkin, content, setContent }) {
   const skinId = activeSkin.id;
   const overrides = content[skinId] || {};
@@ -153,38 +282,31 @@ function ContentTab({ activeSkin, content, setContent }) {
 
   const editableScenes = scenes
     .map((s, i) => ({ s, i }))
-    .filter(({ s }) => ['landing', 'crawl', 'narrative', 'narrative-scene', 'midpoint', 'twist', 'end-reflection', 'results-launch', 'intake'].includes(s.type));
+    .filter(({ s }) => ['landing','crawl','narrative','narrative-scene','midpoint','twist','end-reflection','results-launch','intake'].includes(s.type));
 
   return (
     <div>
-      <div className="sfa-admin-section-title">Content editor</div>
-      <div className="sfa-admin-section-sub">Override scene copy for {activeSkin.name}. Edits are saved per-skin in this browser.</div>
-      <div style={{ display: 'grid', gap: 16, marginTop: 24 }}>
+      <SectionHead title="Content" sub={`Override scene copy for ${activeSkin.name}. Edits are saved per-skin in this browser.`} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {editableScenes.map(({ s, i }) => {
           const o = overrides[i] || {};
           return (
-            <div key={i} style={{ border: '1px solid rgba(255,255,255,0.08)', padding: 16, background: 'rgba(255,255,255,0.02)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-                <div style={{ fontFamily: 'var(--sans)', fontSize: 10, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--amber)' }}>
+            <div key={i} style={{ border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.02)' }}>
+              <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 10, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.orange }}>
                   {i + 1}. {s.type}{s.locationLabel ? ` · ${s.locationLabel}` : ''}
-                </div>
-                {overrides[i] && <button onClick={() => clearScene(i)} style={btnGhost}>reset</button>}
+                </span>
+                {overrides[i] && <button onClick={() => clearScene(i)} style={btnGhost}>Reset</button>}
               </div>
-              {Array.isArray(s.title) && (
-                <Field label="Title (space-separated words)"
-                  value={(o.title ?? s.title.join(' '))}
-                  onChange={v => updateScene(i, 'title', v)} />
-              )}
-              {typeof s.title === 'string' && (
-                <Field label="Title"
-                  value={o.title ?? s.title}
-                  onChange={v => updateScene(i, 'title', v)} />
-              )}
-              {s.sub  && <Field label="Sub"  value={o.sub  ?? s.sub}  onChange={v => updateScene(i, 'sub',  v)} />}
-              {s.note && <Field label="Note" value={o.note ?? s.note} onChange={v => updateScene(i, 'note', v)} multiline />}
-              {s.eyebrow && <Field label="Eyebrow" value={o.eyebrow ?? s.eyebrow} onChange={v => updateScene(i, 'eyebrow', v)} />}
-              {Array.isArray(s.body) && <Field label="Body (lines, separated by ¶)" value={o.body ?? s.body.join(' ¶ ')} onChange={v => updateScene(i, 'body', v)} multiline />}
-              {Array.isArray(s.paragraphs) && <Field label="Paragraphs (separated by ¶)" value={o.paragraphs ?? s.paragraphs.join(' ¶ ')} onChange={v => updateScene(i, 'paragraphs', v)} multiline />}
+              <div style={{ padding: 16 }}>
+                {Array.isArray(s.title) && <Field label="Title (space-separated words)" value={o.title ?? s.title.join(' ')} onChange={v => updateScene(i, 'title', v)} />}
+                {typeof s.title === 'string' && <Field label="Title" value={o.title ?? s.title} onChange={v => updateScene(i, 'title', v)} />}
+                {s.sub  && <Field label="Sub"  value={o.sub  ?? s.sub}  onChange={v => updateScene(i, 'sub',  v)} />}
+                {s.note && <Field label="Note" value={o.note ?? s.note} onChange={v => updateScene(i, 'note', v)} multiline />}
+                {s.eyebrow && <Field label="Eyebrow" value={o.eyebrow ?? s.eyebrow} onChange={v => updateScene(i, 'eyebrow', v)} />}
+                {Array.isArray(s.body) && <Field label="Body (lines, separated by ¶)" value={o.body ?? s.body.join(' ¶ ')} onChange={v => updateScene(i, 'body', v)} multiline />}
+                {Array.isArray(s.paragraphs) && <Field label="Paragraphs (separated by ¶)" value={o.paragraphs ?? s.paragraphs.join(' ¶ ')} onChange={v => updateScene(i, 'paragraphs', v)} multiline />}
+              </div>
             </div>
           );
         })}
@@ -193,7 +315,7 @@ function ContentTab({ activeSkin, content, setContent }) {
   );
 }
 
-// ─── Scoring editor (per-question / per-option scoring) ───────
+/* ── Scoring tab ─────────────────────────────────────────────── */
 function ScoringTab({ activeSkin, scoring, setScoring }) {
   const skinId = activeSkin.id;
   const overrides = scoring[skinId] || {};
@@ -201,41 +323,43 @@ function ScoringTab({ activeSkin, scoring, setScoring }) {
 
   return (
     <div>
-      <div className="sfa-admin-section-title">Scoring editor</div>
-      <div className="sfa-admin-section-sub">Adjust per-option score values for each question in {activeSkin.name}.</div>
-      <div style={{ display: 'grid', gap: 16, marginTop: 24 }}>
+      <SectionHead title="Scoring" sub={`Adjust per-option score values for each question in ${activeSkin.name}.`} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {questions.map(({ s, i }) => (
-          <div key={i} style={{ border: '1px solid rgba(255,255,255,0.08)', padding: 16, background: 'rgba(255,255,255,0.02)' }}>
-            <div style={{ fontFamily: 'var(--sans)', fontSize: 10, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--amber)', marginBottom: 12 }}>
-              Q{i + 1} · {s.qType || 'choice'} · {s.practice || s.risk || ''}
+          <div key={i} style={{ border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.02)' }}>
+            <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.border}` }}>
+              <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 10, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.orange }}>
+                Q{i + 1} · {s.qType || 'choice'} · {s.practice || s.risk || ''}
+              </span>
+              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.silver, fontStyle: 'italic', marginTop: 6 }}>{s.prompt || s.scaleHigh || ''}</div>
             </div>
-            <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', color: 'var(--ink-soft)', marginBottom: 12 }}>{s.prompt || s.scaleHigh || ''}</div>
-            {Array.isArray(s.options) && s.options.map((opt, oi) => {
-              const baseScore = typeof opt.score === 'object' ? Object.entries(opt.score).map(([k, v]) => `${k}=${v}`).join(', ') : (opt.score ?? '');
-              const overrideKey = `${i}.${oi}`;
-              const value = overrides[overrideKey] ?? baseScore;
-              return (
-                <div key={oi} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, marginBottom: 8 }}>
-                  <div style={{ color: 'var(--ink-mute)', fontSize: 13 }}>{opt.label || opt.text || (typeof opt === 'string' ? opt : JSON.stringify(opt))}</div>
-                  <input type="text" value={value}
-                    onChange={e => setScoring(prev => ({ ...prev, [skinId]: { ...(prev[skinId] || {}), [overrideKey]: e.target.value } }))}
-                    style={inputStyle}
-                  />
-                </div>
-              );
-            })}
-            {Array.isArray(s.scaleScores) && (
-              <div style={{ color: 'var(--ink-mute)', fontSize: 12 }}>Scale scoring: {JSON.stringify(s.scaleScores)}</div>
-            )}
+            <div style={{ padding: 16 }}>
+              {Array.isArray(s.options) && s.options.map((opt, oi) => {
+                const baseScore = typeof opt.score === 'object' ? Object.entries(opt.score).map(([k, v]) => `${k}=${v}`).join(', ') : (opt.score ?? '');
+                const overrideKey = `${i}.${oi}`;
+                const value = overrides[overrideKey] ?? baseScore;
+                return (
+                  <div key={oi} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, marginBottom: 8 }}>
+                    <div style={{ color: C.muted, fontSize: 13, paddingTop: 8 }}>{opt.label || opt.text || (typeof opt === 'string' ? opt : JSON.stringify(opt))}</div>
+                    <input type="text" value={value}
+                      onChange={e => setScoring(prev => ({ ...prev, [skinId]: { ...(prev[skinId] || {}), [overrideKey]: e.target.value } }))}
+                      style={inputStyle} />
+                  </div>
+                );
+              })}
+              {Array.isArray(s.scaleScores) && (
+                <div style={{ color: C.muted, fontSize: 12, fontFamily: "'Roboto', sans-serif" }}>Scale scoring: {JSON.stringify(s.scaleScores)}</div>
+              )}
+            </div>
           </div>
         ))}
-        {questions.length === 0 && <div style={emptyStyle}>No question scenes in this skin.</div>}
+        {questions.length === 0 && <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.muted, fontStyle: 'italic' }}>No question scenes in this skin.</div>}
       </div>
     </div>
   );
 }
 
-// ─── Rules editor (RULE_DEFAULTS overrides) ───────────────────
+/* ── Rules tab ───────────────────────────────────────────────── */
 function RulesTab({ rules, setRules }) {
   const sections = useMemo(() => {
     const out = { 'Force Multiplier': [], 'Archetype bands': [], 'Practice bands': [], 'Risk bands': [], 'Secondary pattern triggers': [] };
@@ -250,25 +374,20 @@ function RulesTab({ rules, setRules }) {
     return out;
   }, [rules]);
 
-  const reset = () => setRules({ ...RULE_DEFAULTS });
-
   return (
     <div>
-      <div className="sfa-admin-section-title">Rules editor</div>
-      <div className="sfa-admin-section-sub">Tune the score thresholds that drive archetype selection, band labelling, and secondary-pattern triggering.</div>
-      <button onClick={reset} style={{ ...btnGhost, marginTop: 12 }}>Reset to defaults</button>
-
+      <SectionHead title="Rules" sub="Tune the score thresholds that drive archetype selection, band labelling, and secondary-pattern triggering." />
+      <button onClick={() => setRules({ ...RULE_DEFAULTS })} style={btnGhost}>Reset to defaults</button>
       {Object.entries(sections).map(([title, entries]) => entries.length > 0 && (
         <div key={title} style={{ marginTop: 32 }}>
-          <div style={{ fontFamily: 'var(--sans)', fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: 'var(--amber)', marginBottom: 12 }}>{title}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+          <Label>{title}</Label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
             {entries.map(([k, v]) => (
               <div key={k} style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: 10, alignItems: 'center' }}>
-                <label style={{ color: 'var(--ink-mute)', fontSize: 12, fontFamily: 'var(--sans)' }}>{k}</label>
+                <label style={{ color: C.silver, fontSize: 12, fontFamily: "'Roboto', sans-serif" }}>{k}</label>
                 <input type="number" value={v}
                   onChange={e => setRules(prev => ({ ...prev, [k]: Number(e.target.value) }))}
-                  style={inputStyle}
-                />
+                  style={inputStyle} />
               </div>
             ))}
           </div>
@@ -278,90 +397,61 @@ function RulesTab({ rules, setRules }) {
   );
 }
 
-// ─── Skins tab ────────────────────────────────────────────────
+/* ── Skins tab ───────────────────────────────────────────────── */
 function SkinsTab({ activeSkinIdState, switchSkin }) {
   return (
     <div>
-      <div className="sfa-admin-section-title">Story skins</div>
-      <div className="sfa-admin-section-sub">Skins wrap the same 12-practice assessment in different narrative universes.</div>
-      <div className="sfa-admin-arch-grid">
+      <SectionHead title="Skins" sub="Skins wrap the same 12-practice assessment in different narrative universes." />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 1, background: C.border, marginBottom: 32 }}>
         {SKIN_LIST.map(skin => {
           const isActive = skin.id === activeSkinIdState;
           return (
-            <div key={skin.id} className="sfa-admin-arch-card"
-              style={isActive ? { cursor: 'default', borderLeft: '2px solid var(--amber)' } : {}}>
-              {isActive && <div className="tag">ACTIVE</div>}
-              <div className="name">{skin.name}</div>
-              <div className="head">{skin.tagline}</div>
+            <div key={skin.id} style={{
+              background: isActive ? 'rgba(255,72,29,0.1)' : C.black,
+              padding: '24px 20px',
+              borderLeft: `4px solid ${isActive ? C.orange : 'transparent'}`,
+              display: 'flex', flexDirection: 'column', gap: 10,
+            }}>
+              {isActive && <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.orange }}>Active</div>}
+              <div style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 18, color: C.white }}>{skin.name}</div>
+              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: C.silver, lineHeight: 1.5, flex: 1 }}>{skin.tagline}</div>
               {!isActive && (
-                <button className="sfa-admin-btn" style={{ marginTop: 8 }}
-                  onClick={() => switchSkin(skin.id)}>
-                  Use this skin
-                </button>
+                <button style={btnOrange} onClick={() => switchSkin(skin.id)}
+                  onMouseEnter={e => e.currentTarget.style.background = '#e03d18'}
+                  onMouseLeave={e => e.currentTarget.style.background = C.orange}
+                >Use this skin</button>
               )}
             </div>
           );
         })}
       </div>
-      <div style={{ marginTop: 24 }}>
-        <a href="/admin/image-studio"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 12, padding: '12px 20px', border: '1px solid rgba(255,90,44,0.4)', color: 'var(--ink)', fontFamily: 'var(--sans)', fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', textDecoration: 'none' }}>
-          Open Image Studio &rarr;
-        </a>
-      </div>
+      <a href="/admin/image-studio"
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '12px 20px', background: C.orange, color: C.white, fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', textDecoration: 'none' }}>
+        Open Image Studio →
+      </a>
     </div>
   );
 }
 
-// ─── Results tab ──────────────────────────────────────────────
+/* ── Results tab ─────────────────────────────────────────────── */
 function ResultsTab() {
   return (
     <div>
-      <div className="sfa-admin-section-title">Results history</div>
-      <div className="sfa-admin-section-sub">Session results are saved locally in your browser.</div>
-      <div className="sfa-admin-empty" style={emptyStyle}>No completed sessions in this browser yet.</div>
+      <SectionHead title="Results" sub="Session results are saved locally in your browser." />
+      <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, color: C.muted, fontStyle: 'italic', paddingTop: 16 }}>No completed sessions in this browser yet.</div>
     </div>
   );
 }
 
-// ─── Field helper ─────────────────────────────────────────────
+/* ── Field helper ────────────────────────────────────────────── */
 function Field({ label, value, onChange, multiline }) {
   const Tag = multiline ? 'textarea' : 'input';
   return (
     <div style={{ display: 'grid', gap: 4, marginBottom: 12 }}>
-      <label style={{ fontFamily: 'var(--sans)', fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--ink-mute)' }}>{label}</label>
+      <label style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.muted }}>{label}</label>
       <Tag value={value || ''} onChange={e => onChange(e.target.value)}
         rows={multiline ? 3 : undefined}
-        style={{ ...inputStyle, fontFamily: multiline ? 'var(--serif)' : 'var(--sans)', minHeight: multiline ? 80 : undefined }} />
+        style={{ ...inputStyle, minHeight: multiline ? 80 : undefined }} />
     </div>
   );
 }
-
-const inputStyle = {
-  background: 'rgba(0,0,0,0.4)',
-  border: '1px solid rgba(255,255,255,0.12)',
-  color: 'var(--ink)',
-  padding: '8px 10px',
-  fontSize: 13,
-  outline: 'none',
-  width: '100%',
-  boxSizing: 'border-box'
-};
-const btnGhost = {
-  background: 'transparent',
-  border: '1px solid rgba(255,255,255,0.12)',
-  color: 'var(--ink-mute)',
-  fontFamily: 'var(--sans)',
-  fontSize: 10,
-  letterSpacing: '0.3em',
-  textTransform: 'uppercase',
-  padding: '6px 10px',
-  cursor: 'pointer'
-};
-const emptyStyle = {
-  fontFamily: 'var(--sans)',
-  fontSize: 13,
-  color: 'var(--ink-mute)',
-  fontStyle: 'italic',
-  marginTop: 24
-};
