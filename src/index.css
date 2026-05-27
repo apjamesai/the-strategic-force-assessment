@@ -379,17 +379,7 @@ h3.sfa-display {
 
 .sfa-reveal-word {
   display: inline-block;
-  opacity: 0;
-  transform: translateY(0.4em) translateZ(0);
-  filter: blur(6px);
-  transition: opacity 1s var(--ease), transform 1.2s var(--ease), filter 1.2s var(--ease);
   margin-right: 0.22em;
-}
-
-.active .sfa-reveal-word {
-  opacity: 1;
-  transform: translateY(0) translateZ(0);
-  filter: blur(0);
 }
 
 /* SVG choreography canvas */
