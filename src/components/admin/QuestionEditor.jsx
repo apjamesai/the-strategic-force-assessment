@@ -465,7 +465,10 @@ function NewQuestionModal({ onClose }) {
 // ─── Main exported component ─────────────────────────────────────────────────
 export default function QuestionEditor({ activeSkin, content, setContent, scoring, setScoring }) {
   const skinId = activeSkin.id;
-  const scenes = (activeSkin.scenes || []).map((s, i) => ({ ...s, _idx: i }));
+  const baseScenes = (activeSkin.scenes || []);
+  const [sceneOrder, setSceneOrder] = useState(() => baseScenes.map((_, i) => i));
+  
+  const scenes = sceneOrder.map(idx => ({ ...baseScenes[idx], _idx: idx }));
 
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [rightTab, setRightTab] = useState('question'); // 'question' | 'answers'
@@ -477,7 +480,11 @@ export default function QuestionEditor({ activeSkin, content, setContent, scorin
     const { source, destination } = result;
     if (!destination) return;
     if (source.index === destination.index) return;
-    // TODO: reorder scenes in parent
+    
+    const newOrder = Array.from(sceneOrder);
+    const [moved] = newOrder.splice(source.index, 1);
+    newOrder.splice(destination.index, 0, moved);
+    setSceneOrder(newOrder);
   };
 
   return (
