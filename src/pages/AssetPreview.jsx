@@ -6,15 +6,6 @@ import { SKINS, getActiveSkinId } from '@/lib/sfa/skins/index';
  * Shows every UI element, input type, question format, and visual pattern used throughout
  */
 
-function getThemeValue(key) {
-  try {
-    const val = getComputedStyle(document.documentElement).getPropertyValue(`--${key}`).trim();
-    return val || undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 export default function AssetPreview() {
   const [activeSkinId, setActiveSkinId] = useState(getActiveSkinId());
   const skin = SKINS[activeSkinId] || SKINS.force_trial;
@@ -25,6 +16,14 @@ export default function AssetPreview() {
     window.addEventListener('sfa:skin-change', handleSkinChange);
     return () => window.removeEventListener('sfa:skin-change', handleSkinChange);
   }, []);
+
+  // Extract theme values directly from skin object
+  const getThemeValue = (key) => {
+    const rawTheme = skin.theme || {};
+    const k = key.startsWith('--') ? key.slice(2) : key;
+    const val = rawTheme[`--${k}`] || rawTheme[k];
+    return val;
+  };
 
   const Section = ({ title, children }) => (
     <section style={{ marginBottom: 60 }}>
