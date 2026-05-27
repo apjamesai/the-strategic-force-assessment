@@ -107,7 +107,7 @@ function QuestionPreview({ scene }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%', maxWidth: 500 }}>
           {scene.options.map((opt, i) => (
             <div key={i} style={{ background: C.orange, color: C.white, padding: '12px 16px', fontFamily: "'Roboto', sans-serif", fontSize: 13, borderRadius: 2 }}>
-              {String.fromCharCode(65 + i)}. {opt.label || opt.text || opt}
+              {String.fromCharCode(65 + i)}. {opt.label || opt.text || (typeof opt === 'string' ? opt : JSON.stringify(opt))}
             </div>
           ))}
         </div>
@@ -118,7 +118,7 @@ function QuestionPreview({ scene }) {
           {scene.items.map((item, i) => (
             <div key={i} style={{ background: C.lightBg, border: `1px solid ${C.border}`, padding: '12px 16px', fontFamily: "'Roboto', sans-serif", fontSize: 13, borderRadius: 2, display: 'flex', gap: 12, alignItems: 'center' }}>
               <span style={{ color: C.muted, width: 20 }}>—</span>
-              <span>{item.label || item.text || item}</span>
+              <span>{item.label || item.text || (typeof item === 'string' ? item : JSON.stringify(item))}</span>
             </div>
           ))}
         </div>
@@ -238,7 +238,7 @@ function AnswersPanel({ scene, scoring, skinId, setScoring }) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, padding: '16px 0' }}>
         {scene.options.map((opt, i) => {
-          const label = opt.label || opt.text || `Option ${i + 1}`;
+          const label = opt.label || opt.text || (typeof opt === 'string' ? opt : `Option ${i + 1}`);
           const baseScoring = typeof opt.score === 'object' ? opt.score : {};
           const overrideKey = `mc.${i}`;
           const override = getOverride(overrideKey);
@@ -264,7 +264,7 @@ function AnswersPanel({ scene, scoring, skinId, setScoring }) {
           Ranking scores are weighted by position. Edit the base score per item below.
         </div>
         {scene.items.map((item, i) => {
-          const label = item.label || item.text || `Item ${i + 1}`;
+          const label = item.label || item.text || (typeof item === 'string' ? item : `Item ${i + 1}`);
           const baseScoring = typeof item.score === 'object' ? item.score : {};
           const overrideKey = `ranking.${i}`;
           const override = getOverride(overrideKey);
