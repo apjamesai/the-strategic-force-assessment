@@ -810,6 +810,7 @@ export default function Assessment() {
   return (
     <SkinProvider skin={activeSkin}><div className={`sfa-root interactive${adminOpen ? ' admin-open' : ''}`}
       style={{ position: 'fixed', inset: 0 }}>
+
       {/* Atmosphere */}
       <div className="sfa-grain"></div>
       <div className="sfa-vignette"></div>
@@ -852,7 +853,7 @@ export default function Assessment() {
 
       {/* Main stage — cross-fade between outgoing and current */}
       {!showResults && (
-        <div className="sfa-stage">
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10 }}>
           {outgoing !== null && (
             <SceneSlot key={`out-${outgoing}`} outgoing={true} isCrawl={getScene(outgoing)?.type === 'crawl'}>
               {renderOutgoingContent(outgoing)}

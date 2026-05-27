@@ -1,38 +1,39 @@
 import React, { useRef, useEffect } from 'react';
 
 /**
- * SceneSlot — wraps one scene's DOM with CSS cross-fade behaviour.
- * Uses inline styles instead of class manipulation to avoid React 18
- * Strict Mode double-effect issues.
+ * SceneSlot — wraps a scene in the .sfa-scene container.
+ * Active scenes are always fully visible via inline style.
+ * Outgoing scenes fade out via CSS transition after rAF removal of .active.
  */
 export default function SceneSlot({ children, active, outgoing, isCrawl, isWhooshing }) {
   const ref = useRef(null);
 
-  // Active scenes always get .active immediately — both for visibility
-  // and so that child .sfa-reveal-word transitions fire correctly.
-  // Outgoing scenes start with .active and we remove it after one rAF.
   const cls = [
     'sfa-scene',
-    (active || outgoing) ? 'active' : '',
+    outgoing ? 'active' : '',
     isCrawl ? 'crawl-scene' : '',
-    isWhooshing ? 'whooshing' : ''
+    isWhooshing ? 'whooshing' : '',
   ].filter(Boolean).join(' ');
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     if (outgoing) {
-      // Fade out: remove .active next frame so CSS transition plays opacity 1 → 0.
-      const r1 = requestAnimationFrame(() => {
+      const r = requestAnimationFrame(() => {
         if (el) el.classList.remove('active');
       });
-      return () => cancelAnimationFrame(r1);
+      return () => cancelAnimationFrame(r);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [outgoing]);
+
+  // Active scenes: override CSS opacity/visibility with inline styles so
+  // they are ALWAYS visible regardless of class state or transition timing.
+  const inlineStyle = active
+    ? { opacity: 1, visibility: 'visible', transition: 'none' }
+    : undefined;
 
   return (
-    <div ref={ref} className={cls}>
+    <div ref={ref} className={cls} style={inlineStyle}>
       {children}
     </div>
   );
