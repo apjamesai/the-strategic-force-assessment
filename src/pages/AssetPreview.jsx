@@ -8,13 +8,24 @@ import { SKINS, getActiveSkinId } from '@/lib/sfa/skins/index';
 
 export default function AssetPreview() {
   const [activeSkinId, setActiveSkinId] = useState(getActiveSkinId());
+  const [styleUpdate, setStyleUpdate] = useState(0);
   const skin = SKINS[activeSkinId] || SKINS.force_trial;
 
-  // Listen for skin changes from SkinEditor
+  // Listen for skin changes and CSS variable updates
   useEffect(() => {
     const handleSkinChange = () => setActiveSkinId(getActiveSkinId());
+    const handleStyleChange = () => setStyleUpdate(v => v + 1);
+    
     window.addEventListener('sfa:skin-change', handleSkinChange);
-    return () => window.removeEventListener('sfa:skin-change', handleSkinChange);
+    
+    // Watch for style changes on root element
+    const observer = new MutationObserver(() => setStyleUpdate(v => v + 1));
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+    
+    return () => {
+      window.removeEventListener('sfa:skin-change', handleSkinChange);
+      observer.disconnect();
+    };
   }, []);
 
   // Get theme value from computed styles (reflects live edits)
