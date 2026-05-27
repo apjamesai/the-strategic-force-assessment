@@ -17,12 +17,14 @@ export default function AssetPreview() {
     return () => window.removeEventListener('sfa:skin-change', handleSkinChange);
   }, []);
 
-  // Extract theme values directly from skin object
+  // Get theme value from computed styles (reflects live edits)
   const getThemeValue = (key) => {
-    const rawTheme = skin.theme || {};
-    const k = key.startsWith('--') ? key.slice(2) : key;
-    const val = rawTheme[`--${k}`] || rawTheme[k];
-    return val;
+    const k = key.startsWith('--') ? key : `--${key}`;
+    try {
+      return getComputedStyle(document.documentElement).getPropertyValue(k).trim() || undefined;
+    } catch {
+      return undefined;
+    }
   };
 
   const Section = ({ title, children }) => (
