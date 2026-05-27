@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { FRAMEWORK } from '@/lib/sfa/engine';
 import SfaPreview from './SfaPreview';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 const C = {
   orange: '#FF481D',
@@ -405,6 +406,62 @@ function AnswerScoreBlock({ label, scoreObj, baseScoreObj, onChange }) {
   );
 }
 
+function NewQuestionModal({ onClose }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+      <div style={{ background: C.white, borderRadius: 4, padding: 28, width: 320, boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>
+        <h2 style={{ fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 18, color: C.text, marginBottom: 20, textTransform: 'uppercase', letterSpacing: '-0.01em' }}>
+          Add Question
+        </h2>
+        <div style={{ display: 'grid', gap: 8, marginBottom: 20 }}>
+          {['mc', 'rating', 'ranking', 'short-text'].map(t => (
+            <button key={t} onClick={() => { alert(`Create new ${t} question – TODO`); onClose(); }}
+              style={{
+                padding: '12px 14px',
+                background: 'transparent',
+                border: `1px solid ${C.border}`,
+                borderTop: `2px solid ${C.orange}`,
+                color: C.text,
+                fontFamily: "'Roboto Condensed', sans-serif",
+                fontWeight: 600,
+                fontSize: 11,
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,72,29,0.07)'; e.currentTarget.style.borderColor = C.orange; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = C.border; }}
+            >
+              {t === 'mc' ? 'Multiple Choice' : t === 'rating' ? 'Rating Scale' : t === 'ranking' ? 'Ranking' : 'Short Text'}
+            </button>
+          ))}
+        </div>
+        <button onClick={onClose}
+          style={{
+            width: '100%',
+            padding: '10px 14px',
+            background: 'transparent',
+            border: `1px solid ${C.border}`,
+            color: C.muted,
+            fontFamily: "'Roboto Condensed', sans-serif",
+            fontWeight: 600,
+            fontSize: 10,
+            letterSpacing: '0.3em',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = C.text; e.currentTarget.style.borderColor = C.text; }}
+          onMouseLeave={e => { e.currentTarget.style.color = C.muted; e.currentTarget.style.borderColor = C.border; }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main exported component ─────────────────────────────────────────────────
 export default function QuestionEditor({ activeSkin, content, setContent, scoring, setScoring }) {
   const skinId = activeSkin.id;
@@ -412,43 +469,81 @@ export default function QuestionEditor({ activeSkin, content, setContent, scorin
 
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [rightTab, setRightTab] = useState('question'); // 'question' | 'answers'
+  const [showNewQuestionModal, setShowNewQuestionModal] = useState(false);
 
   const selected = scenes[selectedIdx];
 
-  return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 64px)', overflow: 'hidden', background: C.white }}>
+  const handleDragEnd = (result) => {
+    const { source, destination } = result;
+    if (!destination) return;
+    if (source.index === destination.index) return;
+    // TODO: reorder scenes in parent
+  };
 
-      {/* ── Left: scene list ── */}
-      <div style={{ width: 200, flexShrink: 0, borderRight: `1px solid ${C.border}`, overflowY: 'auto', background: C.white }}>
+  return (
+    <>
+      {showNewQuestionModal && <NewQuestionModal onClose={() => setShowNewQuestionModal(false)} />}
+      <div style={{ display: 'flex', height: 'calc(100vh - 64px)', overflow: 'hidden', background: C.white }}>
+
+        {/* ── Left: scene list ── */}
+      <div style={{ width: 200, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: C.white, display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '12px 16px 8px', fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.4em', textTransform: 'uppercase', color: C.muted, borderBottom: `1px solid ${C.border}` }}>
-          Scenes
+          Questions
         </div>
-        {scenes.map((s, i) => {
-          const isActive = i === selectedIdx;
-          const isQ = s.type === 'question';
-          return (
-            <button key={i} onClick={() => setSelectedIdx(i)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                width: '100%', textAlign: 'left',
-                padding: '9px 14px',
-                background: isActive ? 'rgba(255,72,29,0.07)' : 'transparent',
-                borderLeft: `3px solid ${isActive ? C.orange : 'transparent'}`,
-                border: 'none',
-                borderBottom: `1px solid ${C.border}`,
-                cursor: 'pointer',
-                transition: 'background 0.1s',
-              }}
-            >
-              <span style={{ width: 18, height: 18, flexShrink: 0, background: isQ ? 'rgba(255,72,29,0.12)' : C.lightBg, borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: isQ ? C.orange : C.muted, fontWeight: 700 }}>
-                {typeIcon(s)}
-              </span>
-              <span style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: isActive ? C.orange : C.text, lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                {sceneLabel(s, i)}
-              </span>
-            </button>
-          );
-        })}
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="scenes">
+            {(provided, snapshot) => (
+              <div ref={provided.innerRef} {...provided.droppableProps} style={{ flex: 1, overflowY: 'auto', background: snapshot.isDraggingOver ? 'rgba(255,72,29,0.04)' : 'transparent' }}>
+                {scenes.map((s, i) => {
+                  const isActive = i === selectedIdx;
+                  const isQ = s.type === 'question';
+                  return (
+                    <Draggable key={i} draggableId={`scene-${i}`} index={i}>
+                      {(provided, snapshot) => (
+                        <button ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}
+                          onClick={() => setSelectedIdx(i)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            width: '100%', textAlign: 'left',
+                            padding: '9px 14px',
+                            background: isActive ? 'rgba(255,72,29,0.07)' : snapshot.isDragging ? 'rgba(255,72,29,0.04)' : 'transparent',
+                            borderLeft: `3px solid ${isActive ? C.orange : 'transparent'}`,
+                            border: 'none',
+                            borderBottom: `1px solid ${C.border}`,
+                            cursor: 'grab',
+                            transition: 'background 0.1s',
+                            ...provided.draggableProps.style,
+                          }}
+                        >
+                          <span style={{ width: 18, height: 18, flexShrink: 0, background: isQ ? 'rgba(255,72,29,0.12)' : C.lightBg, borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: isQ ? C.orange : C.muted, fontWeight: 700 }}>
+                            {typeIcon(s)}
+                          </span>
+                          <span style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: isActive ? C.orange : C.text, lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                            {sceneLabel(s, i)}
+                          </span>
+                        </button>
+                      )}
+                    </Draggable>
+                  );
+                })}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+        <button onClick={() => setShowNewQuestionModal(true)}
+          style={{
+            width: '100%', padding: '14px 16px', textAlign: 'center',
+            background: 'transparent', border: `1px solid ${C.border}`, borderTop: `2px solid ${C.orange}`,
+            color: C.orange, fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 600, fontSize: 11,
+            letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer',
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,72,29,0.07)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+        >
+          + New Question
+        </button>
       </div>
 
       {/* ── Centre: preview ── */}
@@ -500,7 +595,8 @@ export default function QuestionEditor({ activeSkin, content, setContent, scorin
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
